@@ -41,7 +41,7 @@ const TeacherForm = ({
     resolver: zodResolver(teacherSchema),
   });
 
-  const [img, setImg] = useState<any>();
+  const [img, setImg] = useState<any>(data?.img ? { secure_url: data.img } : undefined);
 
   const [state, formAction] = useFormState<
     FormState,
@@ -219,25 +219,40 @@ const TeacherForm = ({
             </p>
           )}
         </div>
-        <CldUploadWidget
-          uploadPreset="school"
-          onSuccess={(result, { widget }) => {
-            setImg(result.info);
-            widget.close();
-          }}
-        >
-          {({ open }) => {
-            return (
-              <div
-                className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
-                onClick={() => open()}
-              >
-                <Image src="/upload.png" alt="" width={28} height={28} />
-                <span>Upload a photo</span>
+        <div className="flex flex-col gap-2 w-full">
+          <label className="text-xs text-gray-500">Profile Photo</label>
+          <div className="flex items-center gap-4">
+            {img?.secure_url && (
+              <div className="relative h-20 w-20 rounded-md overflow-hidden border border-gray-300">
+                <Image
+                  src={img.secure_url}
+                  alt="Teacher profile"
+                  fill
+                  style={{ objectFit: 'cover' }}
+                />
               </div>
-            );
-          }}
-        </CldUploadWidget>
+            )}
+            <CldUploadWidget
+              uploadPreset="school"
+              onSuccess={(result, { widget }) => {
+                setImg(result.info);
+                widget.close();
+              }}
+            >
+              {({ open }) => {
+                return (
+                  <div
+                    className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
+                    onClick={() => open()}
+                  >
+                    <Image src="/upload.png" alt="" width={28} height={28} />
+                    <span>{img?.secure_url ? "Change photo" : "Upload a photo"}</span>
+                  </div>
+                );
+              }}
+            </CldUploadWidget>
+          </div>
+        </div>
       </div>
       {state.error && (
         <span className="text-red-500">

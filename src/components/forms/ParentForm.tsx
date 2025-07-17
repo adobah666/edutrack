@@ -35,7 +35,7 @@ const ParentForm = ({
     watch,
     formState: { errors },
   } = useForm<ParentSchema>({
-    resolver: zodResolver(parentSchema),      defaultValues: {
+    resolver: zodResolver(parentSchema), defaultValues: {
       username: data?.username || "",
       password: data?.password || "",
       name: data?.name || "",
@@ -47,7 +47,8 @@ const ParentForm = ({
       studentIds: data?.students?.map((s: any) => s.id) || [],
       img: data?.img || ""
     }
-  });  const [img, setImg] = useState<any>();
+  });  // Initialize with the existing image if available
+  const [img, setImg] = useState<any>(data?.img ? { secure_url: data.img } : null);
   const [selectedGrade, setSelectedGrade] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentStudents, setCurrentStudents] = useState<Student[]>(data?.students || []);
@@ -76,9 +77,9 @@ const ParentForm = ({
         studentIds: currentStudents.map(student => student.id),
         img: img?.secure_url || ""
       };
-      
+
       await formAction(formDataWithImage);
-      
+
     } catch (error) {
       console.error('Form submission error:', error);
       setIsSubmitting(false);
@@ -111,7 +112,7 @@ const ParentForm = ({
       setIsSubmitting(false);
     }
   }, [state, type, setOpen, router]);
-    const removeStudent = (studentId: number) => {
+  const removeStudent = (studentId: number) => {
     setCurrentStudents((prev: Student[]) => prev.filter((s) => s.id !== studentId));
   };
 
@@ -181,7 +182,7 @@ const ParentForm = ({
           error={errors?.address}
         />      </div>
       <span className="text-xs text-gray-400 font-medium mb-1">Students</span>
-      
+
       {type === "update" && currentStudents.length > 0 && (
         <div className="mb-4">
           <p className="text-xs text-gray-600 mb-2">Currently assigned students:</p>
@@ -220,7 +221,7 @@ const ParentForm = ({
             ))}
           </select>
         </div>
-        
+
         <div className="mt-3">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Students
@@ -234,8 +235,8 @@ const ParentForm = ({
                 .map((student: any) => {
                   const isAssigned = currentStudents.some(s => s.id === student.id);
                   return (
-                    <label 
-                      key={student.id} 
+                    <label
+                      key={student.id}
                       className="flex items-center gap-2 bg-white p-2 rounded shadow-sm hover:bg-gray-50 transition-colors cursor-pointer min-w-[200px]"
                     >
                       <input
@@ -259,38 +260,68 @@ const ParentForm = ({
         </span>
       )}
 
-      <span className="text-xs text-gray-400 font-medium mb-1">Image Upload</span>
-      <div className="mb-2">
-        <CldUploadWidget
-          uploadPreset="school_management"
-          onSuccess={(result: any) => {
-            setImg(result.info);
-          }}
-        >
-          {({ open }) => {
-            const onClick = () => {
-              open();
-            };
-            return (
-              <button
-                onClick={onClick}
-                type="button"
-                className="bg-lamaBlue w-28 text-white text-sm py-2 px-4 rounded-md"
-              >
-                Upload Image
-              </button>
-            );
-          }}
-        </CldUploadWidget>
-      </div>      <button 
-        type="submit" 
+      <div className="flex flex-col gap-2 w-full mb-4">
+        <label className="text-xs text-gray-500">Profile Photo</label>
+        <div className="flex items-center gap-4">
+          {img?.secure_url && (
+            <div className="relative h-32 w-32 rounded-md overflow-hidden border border-gray-300">
+              <Image
+                src={img.secure_url}
+                alt="Parent profile"
+                fill
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+          )}
+          <CldUploadWidget
+            uploadPreset="school"
+            options={{
+              maxFiles: 1,
+              resourceType: "image",
+              clientAllowedFormats: ["jpg", "jpeg", "png", "gif"]
+            }}
+            onSuccess={(result: any, { widget }: any) => {
+              console.log("Upload success, result:", result);
+              setImg(result.info);
+              widget.close();
+            }}
+            onError={(error: any) => {
+              console.error("Upload error:", error);
+              toast.error("Image upload failed. Please try again.");
+            }}
+          >
+            {({ open }) => (
+              <div className="flex flex-col items-start">
+                <button
+                  type="button"
+                  className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer bg-transparent border-0 p-0"
+                  onClick={() => open()}
+                >
+                  <Image
+                    src="/upload.png"
+                    alt="Upload"
+                    width={28}
+                    height={28}
+                    priority
+                  />
+                  <span>{img?.secure_url ? "Change photo" : "Upload a photo"}</span>
+                </button>
+                <span className="text-xs text-gray-400 mt-1">
+                  Supported formats: JPG, PNG, GIF
+                </span>
+              </div>
+            )}
+          </CldUploadWidget>
+        </div>
+      </div>      <button
+        type="submit"
         className="p-4 bg-lamaPurple w-full text-white disabled:bg-gray-300 disabled:cursor-not-allowed"
         disabled={isSubmitting}
       >
-        {isSubmitting 
-          ? "Processing..." 
-          : type === "create" 
-            ? "Create Parent" 
+        {isSubmitting
+          ? "Processing..."
+          : type === "create"
+            ? "Create Parent"
             : "Update Parent"
         }
       </button>

@@ -54,7 +54,7 @@ const StudentForm = ({
     }
   });
 
-  const [img, setImg] = useState<any>(data?.img || null);
+  const [img, setImg] = useState<any>(data?.img ? { secure_url: data.img } : null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [state, formAction] = useFormState(
@@ -126,36 +126,40 @@ const StudentForm = ({
       <span className="text-xs text-gray-400 font-medium">
         Personal Information
       </span>
-      <CldUploadWidget
-        uploadPreset="school"
-        onSuccess={(result, { widget }) => {
-          setImg(result.info);
-          widget.close();
-        }}
-      >
-        {({ open }) => {
-          return (
-            <div
-              className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
-              onClick={() => open()}
-            >
-              <Image src="/upload.png" alt="" width={28} height={28} />
-              <span>{img ? "Change photo" : "Upload a photo"}</span>
-              {img && (
-                <div className="ml-2">
-                  <Image 
-                    src={img.secure_url || img} 
-                    alt="Student" 
-                    width={40} 
-                    height={40} 
-                    className="rounded-full object-cover"
-                  />
-                </div>
-              )}
+      <div className="flex flex-col gap-2 w-full">
+        <label className="text-xs text-gray-500">Profile Photo</label>
+        <div className="flex items-center gap-4">
+          {img && (
+            <div className="relative h-32 w-32 rounded-md overflow-hidden border border-gray-300">
+              <Image 
+                src={img.secure_url || img} 
+                alt="Student profile" 
+                fill 
+                style={{ objectFit: 'cover' }} 
+              />
             </div>
-          );
-        }}
-      </CldUploadWidget>
+          )}
+          <CldUploadWidget
+            uploadPreset="school"
+            onSuccess={(result, { widget }) => {
+              setImg(result.info);
+              widget.close();
+            }}
+          >
+            {({ open }) => {
+              return (
+                <div
+                  className="text-xs text-gray-500 flex items-center gap-2 cursor-pointer"
+                  onClick={() => open()}
+                >
+                  <Image src="/upload.png" alt="" width={28} height={28} />
+                  <span>{img ? "Change photo" : "Upload a photo"}</span>
+                </div>
+              );
+            }}
+          </CldUploadWidget>
+        </div>
+      </div>
       <div className="flex justify-between flex-wrap gap-4">
         <InputField
           label="First Name"

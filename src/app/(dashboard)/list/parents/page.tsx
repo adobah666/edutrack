@@ -40,11 +40,11 @@ const ParentListPage = async ({
     },
     ...(role === "admin"
       ? [
-          {
-            header: "Actions",
-            accessor: "actions",
-          },
-        ]
+        {
+          header: "Actions",
+          accessor: "actions",
+        },
+      ]
       : []),
   ];
 
@@ -57,11 +57,11 @@ const ParentListPage = async ({
 
   if (queryParams.search) {
     const searchTerm = queryParams.search;
-    
+
     // Create an OR condition to search in both parent name and student names
     query.OR = [
       { name: { contains: searchTerm, mode: "insensitive" } },
-      { 
+      {
         students: {
           some: {
             name: { contains: searchTerm, mode: "insensitive" }
@@ -109,7 +109,7 @@ const ParentListPage = async ({
   }));
 
   return (
-    <div className="flex-1 p-4 m-4 mt-0">
+    <div className="flex-1 p-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-lamaYellow to-lamaPurple rounded-xl p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
@@ -150,7 +150,7 @@ const ParentListPage = async ({
               Search by parent or student name
             </p>
           </div>
-          
+
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2">
               <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow hover:bg-lamaYellowLight transition-colors">
@@ -182,7 +182,7 @@ const ParentListPage = async ({
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-lamaSkyLight p-2 rounded-lg">
@@ -196,7 +196,7 @@ const ParentListPage = async ({
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-lamaPurpleLight p-2 rounded-lg">
@@ -210,7 +210,7 @@ const ParentListPage = async ({
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
           <div className="flex items-center gap-3">
             <div className="bg-lamaYellowLight p-2 rounded-lg">
@@ -234,12 +234,14 @@ const ParentListPage = async ({
             {queryParams.search ? `Search results for "${queryParams.search}"` : 'All registered parents and guardians'}
           </p>
         </div>
-        
-        <Table 
-          columns={columns} 
-          data={tableData}
-          emptyMessage="No parents found" 
-        />
+
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={tableData}
+            emptyMessage="No parents found"
+          />
+        </div>
       </div>
 
       {/* Pagination */}

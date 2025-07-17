@@ -9,7 +9,7 @@ import { Attendance, Prisma, Student, Class } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 
-type AttendanceRecord = Attendance & { 
+type AttendanceRecord = Attendance & {
   student: Pick<Student, 'name' | 'surname'>;
   class: Pick<Class, 'name'>;
 };
@@ -41,11 +41,11 @@ const AttendanceListPage = async ({
     },
     ...(role === "admin" || role === "teacher"
       ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
+        {
+          header: "Actions",
+          accessor: "action",
+        },
+      ]
       : []),
   ];
 
@@ -91,7 +91,7 @@ const AttendanceListPage = async ({
                 student: {
                   surname: { contains: value, mode: "insensitive" },
                 },
-              },              {
+              }, {
                 class: {
                   name: { contains: value, mode: "insensitive" },
                 },
@@ -128,18 +128,17 @@ const AttendanceListPage = async ({
       ],
     }),
     prisma.attendance.count({ where: query }),
-  ]);  const formattedData = attendanceData.map((item: AttendanceRecord) => ({
+  ]); const formattedData = attendanceData.map((item: AttendanceRecord) => ({
     id: item.id,
     student: `${item.student.name} ${item.student.surname}`,
     class: item.class.name,
     date: new Date(item.date).toLocaleDateString(),
     status: (
-      <span 
-        className={`px-2 py-1 rounded-full text-xs ${
-          item.present 
-            ? "bg-green-100 text-green-800" 
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${item.present
+            ? "bg-green-100 text-green-800"
             : "bg-red-100 text-red-800"
-        }`}
+          }`}
       >
         {item.present ? "PRESENT" : "ABSENT"}
       </span>
@@ -153,7 +152,7 @@ const AttendanceListPage = async ({
   }));
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
+    <div className="bg-white p-4 sm:px-6 lg:px-8 rounded-md flex-1">
       {/* TOP */}
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">Daily Attendance Records</h1>
@@ -171,13 +170,15 @@ const AttendanceListPage = async ({
             )}
           </div>
         </div>
-      </div>      
+      </div>
       {/* FILTERS */}
       <AttendanceFilters />
-      
+
       {/* LIST */}
-      <Table columns={columns} data={formattedData} />
-      
+      <div className="overflow-x-auto">
+        <Table columns={columns} data={formattedData} />
+      </div>
+
       {/* PAGINATION */}
       <Pagination page={p} count={count} />
     </div>

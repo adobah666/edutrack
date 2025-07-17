@@ -171,7 +171,7 @@ const TeacherListPage = async ({
   }));
 
   return (
-    <div className="flex-1 p-4 m-4 mt-0">
+    <div className="flex-1 p-4 sm:px-6 lg:px-8">
       {/* Header Section */}
       <div className="bg-gradient-to-r from-lamaPurple to-lamaSky rounded-xl p-6 mb-6 shadow-sm">
         <div className="flex items-center justify-between">
@@ -281,11 +281,13 @@ const TeacherListPage = async ({
           </p>
         </div>
 
-        <Table
-          columns={columns}
-          data={tableData}
-          emptyMessage="No teachers found"
-        />
+        <div className="overflow-x-auto">
+          <Table
+            columns={columns}
+            data={tableData}
+            emptyMessage="No teachers found"
+          />
+        </div>
       </div>
 
       {/* Pagination */}

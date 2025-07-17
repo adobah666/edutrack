@@ -9,11 +9,8 @@ import TeacherRow from "@/components/TeacherRow";
 import prisma from "@/lib/prisma";
 import { Class, Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
-import Link from "next/link";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
-
-type TeacherList = Teacher & { subjects: Subject[] } & { classes: Class[] };
 
 const TeacherListPage = async ({
   searchParams,
@@ -22,7 +19,7 @@ const TeacherListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
-  
+
   // Get all subjects for the filter dropdown
   const subjects = await prisma.subject.findMany({
     orderBy: {
@@ -33,7 +30,7 @@ const TeacherListPage = async ({
       name: true,
     },
   });
-  
+
   const columns = [
     {
       header: "Info",
@@ -66,11 +63,11 @@ const TeacherListPage = async ({
     },
     ...(role === "admin"
       ? [
-          {
-            header: "Actions",
-            accessor: "actions",
-          },
-        ]
+        {
+          header: "Actions",
+          accessor: "actions",
+        },
+      ]
       : []),
   ];
 
@@ -113,11 +110,11 @@ const TeacherListPage = async ({
   // Enhanced search handling for both teacher name and subject name
   if (queryParams.search) {
     const searchTerm = queryParams.search;
-    
+
     // Create an OR condition to search in both teacher name and subject names
     query.OR = [
       { name: { contains: searchTerm, mode: "insensitive" } },
-      { 
+      {
         subjects: {
           some: {
             name: { contains: searchTerm, mode: "insensitive" }
@@ -146,7 +143,7 @@ const TeacherListPage = async ({
     teacherData = teacherData.sort((a, b) => {
       const aSubjects = a.subjects.map(s => s.name).sort().join(', ');
       const bSubjects = b.subjects.map(s => s.name).sort().join(', ');
-      
+
       // Sort based on the direction
       if (sortOrder === 'asc') {
         return aSubjects.localeCompare(bSubjects);
@@ -174,32 +171,127 @@ const TeacherListPage = async ({
   }));
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Teachers</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <div className="w-full md:w-auto">
-            <TableSearch />
-            <p className="text-xs text-gray-500 mt-1">Search by teacher or subject name</p>
+    <div className="flex-1 p-4 m-4 mt-0">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-lamaPurple to-lamaSky rounded-xl p-6 mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <Image
+                src="/teacher.png"
+                alt="Teachers"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Teachers</h1>
+              <p className="text-gray-600 text-sm">
+                Manage and view all teaching staff ({count} total)
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4 self-end">
-            <SubjectFilter subjects={subjects} selectedSubjectId={subjectId} />
-            <SortButton currentSort={sortOrder} />
-            {role === "admin" && (
+          {role === "admin" && (
+            <div className="hidden md:block">
               <FormContainer table="teacher" type="create" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters and Search Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Teachers
+            </label>
+            <TableSearch />
+            <p className="text-xs text-gray-500 mt-1">
+              Search by teacher name or subject
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Filter:</label>
+              <SubjectFilter subjects={subjects} selectedSubjectId={subjectId} />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Sort:</label>
+              <SortButton currentSort={sortOrder} />
+            </div>
+            {role === "admin" && (
+              <div className="md:hidden">
+                <FormContainer table="teacher" type="create" />
+              </div>
             )}
           </div>
         </div>
       </div>
-      {/* LIST */}
-      <Table 
-        columns={columns} 
-        data={tableData}
-        emptyMessage="No teachers found" 
-      />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaPurpleLight p-2 rounded-lg">
+              <Image src="/teacher.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{count}</p>
+              <p className="text-sm text-gray-600">Total Teachers</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaSkyLight p-2 rounded-lg">
+              <Image src="/subject.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{subjects.length}</p>
+              <p className="text-sm text-gray-600">Subjects Taught</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaYellowLight p-2 rounded-lg">
+              <Image src="/class.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {teacherData.reduce((acc, teacher) => acc + teacher.classes.length, 0)}
+              </p>
+              <p className="text-sm text-gray-600">Classes Assigned</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Teachers Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800">Teachers Directory</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {queryParams.search ? `Search results for "${queryParams.search}"` : 'All registered teachers'}
+          </p>
+        </div>
+
+        <Table
+          columns={columns}
+          data={tableData}
+          emptyMessage="No teachers found"
+        />
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };

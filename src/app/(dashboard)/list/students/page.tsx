@@ -13,8 +13,6 @@ import StudentRow from "@/components/StudentRow";
 
 import { auth } from "@clerk/nextjs/server";
 
-type StudentList = Student & { class: Class; parent?: Parent | null };
-
 const StudentListPage = async ({
   searchParams,
 }: {
@@ -166,25 +164,141 @@ const StudentListPage = async ({
   }));
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Students</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <TableSearch />
-          <div className="flex items-center gap-4 self-end">
-            <ClassFilter classes={classes} selectedClassId={classId} />
-            <SortButton currentSort={sortOrder} />
-            {role === "admin" && (
+    <div className="flex-1 p-4 m-4 mt-0">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-lamaSky to-lamaYellow rounded-xl p-6 mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <Image
+                src="/student.png"
+                alt="Students"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Students</h1>
+              <p className="text-gray-600 text-sm">
+                Manage and view all enrolled students ({count} total)
+              </p>
+            </div>
+          </div>
+          {role === "admin" && (
+            <div className="hidden md:block">
               <FormContainer table="student" type="create" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters and Search Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Students
+            </label>
+            <TableSearch />
+            <p className="text-xs text-gray-500 mt-1">
+              Search by student name
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Filter:</label>
+              <ClassFilter classes={classes} selectedClassId={classId} />
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Sort:</label>
+              <SortButton currentSort={sortOrder} />
+            </div>
+            {role === "admin" && (
+              <div className="md:hidden">
+                <FormContainer table="student" type="create" />
+              </div>
             )}
           </div>
         </div>
       </div>
-      {/* LIST */}
-      <Table columns={columns} data={tableData} />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaSkyLight p-2 rounded-lg">
+              <Image src="/student.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{count}</p>
+              <p className="text-sm text-gray-600">Total Students</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaPurpleLight p-2 rounded-lg">
+              <Image src="/class.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{classes.length}</p>
+              <p className="text-sm text-gray-600">Active Classes</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaYellowLight p-2 rounded-lg">
+              <Image src="/maleFemale.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {sortedData.filter(s => s.sex === 'MALE').length}M / {sortedData.filter(s => s.sex === 'FEMALE').length}F
+              </p>
+              <p className="text-sm text-gray-600">Gender Ratio</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaSkyLight p-2 rounded-lg">
+              <Image src="/parent.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {sortedData.filter(s => s.parent).length}
+              </p>
+              <p className="text-sm text-gray-600">With Parents</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Students Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800">Students Directory</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {queryParams.search ? `Search results for "${queryParams.search}"` : 'All enrolled students'}
+          </p>
+        </div>
+        
+        <Table 
+          columns={columns} 
+          data={tableData}
+          emptyMessage="No students found" 
+        />
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };

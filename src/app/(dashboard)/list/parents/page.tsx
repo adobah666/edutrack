@@ -10,8 +10,6 @@ import ParentRow from "@/components/ParentRow";
 
 import { auth } from "@clerk/nextjs/server";
 
-type ParentList = Parent & { students: Student[] };
-
 const ParentListPage = async ({
   searchParams,
 }: {
@@ -111,34 +109,143 @@ const ParentListPage = async ({
   }));
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Parents</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <div className="w-full md:w-auto">
-            <TableSearch />
-            <p className="text-xs text-gray-500 mt-1">Search by parent or student name</p>
+    <div className="flex-1 p-4 m-4 mt-0">
+      {/* Header Section */}
+      <div className="bg-gradient-to-r from-lamaYellow to-lamaPurple rounded-xl p-6 mb-6 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="bg-white p-3 rounded-lg shadow-sm">
+              <Image
+                src="/parent.png"
+                alt="Parents"
+                width={32}
+                height={32}
+                className="w-8 h-8"
+              />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">Parents</h1>
+              <p className="text-gray-600 text-sm">
+                Manage and view all parent guardians ({count} total)
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {role === "admin" && <FormContainer table="parent" type="create" />}
+          {role === "admin" && (
+            <div className="hidden md:block">
+              <FormContainer table="parent" type="create" />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Filters and Search Section */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+          <div className="flex-1 max-w-md">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Search Parents
+            </label>
+            <TableSearch />
+            <p className="text-xs text-gray-500 mt-1">
+              Search by parent or student name
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2">
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow hover:bg-lamaYellowLight transition-colors">
+                <Image src="/filter.png" alt="Filter" width={14} height={14} />
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow hover:bg-lamaYellowLight transition-colors">
+                <Image src="/sort.png" alt="Sort" width={14} height={14} />
+              </button>
+            </div>
+            {role === "admin" && (
+              <div className="md:hidden">
+                <FormContainer table="parent" type="create" />
+              </div>
+            )}
           </div>
         </div>
       </div>
-      {/* LIST */}
-      <Table 
-        columns={columns} 
-        data={tableData}
-        emptyMessage="No parents found" 
-      />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaYellowLight p-2 rounded-lg">
+              <Image src="/parent.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">{count}</p>
+              <p className="text-sm text-gray-600">Total Parents</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaSkyLight p-2 rounded-lg">
+              <Image src="/student.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {data.reduce((acc, parent) => acc + (parent.students?.length || 0), 0)}
+              </p>
+              <p className="text-sm text-gray-600">Children Enrolled</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaPurpleLight p-2 rounded-lg">
+              <Image src="/phone.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {data.filter(parent => parent.phone).length}
+              </p>
+              <p className="text-sm text-gray-600">With Phone</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg p-4 border border-gray-100 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="bg-lamaYellowLight p-2 rounded-lg">
+              <Image src="/mail.png" alt="" width={20} height={20} />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-gray-800">
+                {data.filter(parent => parent.email).length}
+              </p>
+              <p className="text-sm text-gray-600">With Email</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Parents Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="text-lg font-semibold text-gray-800">Parents Directory</h2>
+          <p className="text-sm text-gray-600 mt-1">
+            {queryParams.search ? `Search results for "${queryParams.search}"` : 'All registered parents and guardians'}
+          </p>
+        </div>
+        
+        <Table 
+          columns={columns} 
+          data={tableData}
+          emptyMessage="No parents found" 
+        />
+      </div>
+
+      {/* Pagination */}
+      <div className="mt-6">
+        <Pagination page={p} count={count} />
+      </div>
     </div>
   );
 };

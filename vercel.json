@@ -1,0 +1,10 @@
+{
+  "buildCommand": "prisma generate && next build",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "functions": {
+    "app/api/fees/reminders/route": {
+      "maxDuration": 30
+    }
+  }
+}

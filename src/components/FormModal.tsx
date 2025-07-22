@@ -20,6 +20,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { toast } from "react-toastify";
 import { FormContainerProps } from "./FormContainer";
+import { Trash2 } from "lucide-react";
 
 const deleteActionMap = {
   subject: deleteSubject,
@@ -143,10 +144,10 @@ const FormModal = ({
         };
       case "delete":
         return {
-          bg: "bg-amber-500",
-          hover: "hover:bg-amber-600",
+          bg: "bg-red-500",
+          hover: "hover:bg-red-600",
           width: 16,
-          icon: "opacity-90 drop-shadow-sm"
+          icon: "text-white"
         };
       default:
         return {
@@ -168,13 +169,20 @@ const FormModal = ({
         className={`${buttonStyle} ${buttonStyles.bg} ${buttonStyles.hover}`}
         onClick={() => setOpen(true)}
       >
-        <Image 
-          src={`/${type}.png`} 
-          alt=""
-          width={buttonStyles.width} 
-          height={buttonStyles.width}
-          className={`transition-transform hover:scale-110 ${buttonStyles.icon || ''}`}
-        />
+        {type === "delete" ? (
+          <Trash2 
+            size={buttonStyles.width} 
+            className={`transition-transform hover:scale-110 ${buttonStyles.icon || ''}`}
+          />
+        ) : (
+          <Image 
+            src={`/${type}.png`} 
+            alt=""
+            width={buttonStyles.width} 
+            height={buttonStyles.width}
+            className={`transition-transform hover:scale-110 ${buttonStyles.icon || ''}`}
+          />
+        )}
         {buttonText && <span>{buttonText}</span>}
       </button>
       {open && (

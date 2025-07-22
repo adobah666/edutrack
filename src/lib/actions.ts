@@ -419,20 +419,54 @@ export const deleteTeacher = async (
 ) => {
   const id = data.get("id") as string;
   try {
-    // First check if the user exists in Clerk
-    try {
-      await clerkClient.users.getUser(id);
-      // If user exists in Clerk, delete them
-      await clerkClient.users.deleteUser(id);
-    } catch (error) {
-      // If Clerk user not found, just log it but continue with database deletion
-      console.log("Clerk user not found, proceeding with database deletion only");
-    }
+    // Use a transaction to ensure all operations succeed or fail together
+    await prisma.$transaction(async (tx) => {
+      // First, handle all foreign key relationships
+      
+      // 1. Delete or reassign lessons taught by this teacher
+      await tx.lesson.deleteMany({
+        where: { teacherId: id },
+      });
 
-    // Delete the teacher from the database regardless of Clerk status
-    await prisma.teacher.delete({
-      where: { id },
+      // 2. Delete assignments created by this teacher
+      await tx.assignment.deleteMany({
+        where: { teacherId: id },
+      });
+
+      // 3. Remove teacher as supervisor from classes (set to null)
+      await tx.class.updateMany({
+        where: { supervisorId: id },
+        data: { supervisorId: null },
+      });
+
+      // 4. Delete announcements made by this teacher
+      await tx.announcement.deleteMany({
+        where: { teacherId: id },
+      });
+
+      // 5. Disconnect from subjects (many-to-many relationship)
+      await tx.teacher.update({
+        where: { id },
+        data: {
+          subjects: {
+            set: [], // Remove all subject connections
+          },
+        },
+      });
+
+      // 6. Finally, delete the teacher
+      await tx.teacher.delete({
+        where: { id },
+      });
     });
+
+    // After successful database deletion, try to delete from Clerk
+    try {
+      await clerkClient().users.deleteUser(id);
+    } catch (error) {
+      // If Clerk user not found, just log it - database deletion was successful
+      console.log("Clerk user not found, but database deletion completed successfully");
+    }
 
     return { success: true, error: false };
   } catch (err) {

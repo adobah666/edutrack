@@ -7,10 +7,11 @@ import SortButton from "@/components/SortButton";
 import TeacherRow from "@/components/TeacherRow";
 
 import prisma from "@/lib/prisma";
-import { Class, Prisma, Subject, Teacher } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import Image from "next/image";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
+import { getCurrentUserSchool, getSchoolFilter } from "@/lib/school-context";
 
 const TeacherListPage = async ({
   searchParams,
@@ -20,8 +21,12 @@ const TeacherListPage = async ({
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  // Get all subjects for the filter dropdown
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
+  // Get all subjects for the filter dropdown (filtered by school)
   const subjects = await prisma.subject.findMany({
+    where: schoolFilter,
     orderBy: {
       name: 'asc',
     },
@@ -77,7 +82,9 @@ const TeacherListPage = async ({
   const sortOrder = sort === 'desc' ? 'desc' : 'asc'; // Default to ascending if not specified
 
   // URL PARAMS CONDITION
-  const query: Prisma.TeacherWhereInput = {};
+  const query: Prisma.TeacherWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   // Process standard filter parameters
   if (queryParams) {

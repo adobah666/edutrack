@@ -8,6 +8,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Prisma, Teacher, Student } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type ClassList = Class & { 
   supervisor: Teacher | null;
@@ -21,6 +22,9 @@ const ClassListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
 
   const columns = [
     {
@@ -57,7 +61,9 @@ const ClassListPage = async ({
   const p = page ? parseInt(page) : 1;
 
   // URL PARAMS CONDITION
-  const query: Prisma.ClassWhereInput = {};
+  const query: Prisma.ClassWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {

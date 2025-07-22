@@ -27,9 +27,24 @@ export const createSubject = async (
   data: SubjectSchema
 ) => {
   try {
+    // Get the current user's school context
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     await prisma.subject.create({
       data: {
         name: data.name,
+        schoolId,
         teachers: {
           connect: data.teachers.map((teacherId) => ({ id: teacherId })),
         },
@@ -96,7 +111,21 @@ export const createParent = async (
   let createdClerkUser = null;
 
   try {
-    // Check if username exists
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
+    // SECOND: Check if username exists
     const existingUsersByUsername = await clerkClient.users.getUserList({
       username: [data.username],
     });
@@ -108,7 +137,7 @@ export const createParent = async (
       };
     }
 
-    // Check if email exists (if provided)
+    // THIRD: Check if email exists (if provided)
     if (data.email) {
       const existingUsersByEmail = await clerkClient.users.getUserList({
         emailAddress: [data.email],
@@ -122,7 +151,7 @@ export const createParent = async (
       }
     }
 
-    // Create user in Clerk
+    // FOURTH: Create user in Clerk
     createdClerkUser = await clerkClient.users.createUser({
       username: data.username,
       password: data.password,
@@ -143,6 +172,7 @@ export const createParent = async (
         phone: data.phone,
         address: data.address,
         img: data.img || null,
+        schoolId,
       },
     });
 
@@ -183,8 +213,25 @@ export const createClass = async (
   data: ClassSchema
 ) => {
   try {
+    // Get the current user's school context
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     await prisma.class.create({
-      data,
+      data: {
+        ...data,
+        schoolId,
+      },
     });
 
     // revalidatePath("/list/class");
@@ -242,7 +289,21 @@ export const createTeacher = async (
   let createdClerkUser = null;
 
   try {
-    // First check if username already exists
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
+    // SECOND: Check if username already exists
     try {
       const existingUsers = await clerkClient.users.getUserList({
         username: [data.username],
@@ -263,7 +324,7 @@ export const createTeacher = async (
       };
     }
 
-    // Then check if email already exists (if provided)
+    // THIRD: Check if email already exists (if provided)
     if (data.email) {
       try {
         const existingUsers = await clerkClient.users.getUserList({
@@ -338,6 +399,7 @@ export const createTeacher = async (
           bloodType: data.bloodType,
           sex: data.sex,
           birthday: data.birthday,
+          schoolId, // Use the schoolId validated at the beginning
           subjects: {
             connect: data.subjects?.map((subjectId: string) => ({
               id: parseInt(subjectId),
@@ -483,7 +545,21 @@ export const createStudent = async (
   let createdClerkUser = null;
 
   try {
-    // First check if username already exists
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
+    // SECOND: Check if username already exists
     try {
       const existingUsers = await clerkClient.users.getUserList({
         username: [data.username],
@@ -504,7 +580,7 @@ export const createStudent = async (
       };
     }
 
-    // Check class capacity
+    // THIRD: Check class capacity
     const classItem = await prisma.class.findUnique({
       where: { id: data.classId },
       include: { _count: { select: { students: true } } },
@@ -553,6 +629,20 @@ export const createStudent = async (
     }
 
     try {
+      // Get the current user's school context
+      const userContext = await getCurrentUserSchool();
+      
+      if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+        return { success: false, error: true, message: "School context not found" };
+      }
+
+      // Use the user's school ID, or if super admin, require schoolId in data
+      const schoolId = userContext.schoolId || data.schoolId;
+      
+      if (!schoolId) {
+        return { success: false, error: true, message: "School ID is required" };
+      }
+
       // If user creation succeeded, create the student record
       await prisma.student.create({
         data: {
@@ -568,6 +658,7 @@ export const createStudent = async (
           gradeId: data.gradeId,
           classId: data.classId,
           parentId: data.parentId,
+          schoolId,
         },
       });
 

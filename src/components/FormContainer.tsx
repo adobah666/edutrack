@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import FormModal from "./FormModal";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 export type FormContainerProps = {
   table:
@@ -31,10 +32,14 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   if (type !== "delete") {
     switch (table) {
       case "subject":
         const subjectTeachers = await prisma.teacher.findMany({
+          where: schoolFilter,
           select: { id: true, name: true, surname: true },
         });
         relatedData = { teachers: subjectTeachers };
@@ -43,14 +48,17 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch subjects, classes and teachers for dropdowns 
         const [lessonSubjects, lessonClasses, lessonTeachers] = await Promise.all([
           prisma.subject.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.class.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.teacher.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true, surname: true },
           }),
@@ -64,6 +72,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         break;
       case "event":
         const eventClasses = await prisma.class.findMany({
+          where: schoolFilter,
           select: { id: true, name: true },
           orderBy: { name: 'asc' }
         });
@@ -71,6 +80,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         break;
       case "class":
         const classGrades = await prisma.grade.findMany({
+          // Remove school filter for grades - they should be universal
           select: {
             id: true,
             name: true,
@@ -86,6 +96,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         console.log('Fetched grades:', classGrades); // Debug log
         
         const classTeachers = await prisma.teacher.findMany({
+          where: schoolFilter,
           select: { id: true, name: true, surname: true },
           orderBy: [
             { name: 'asc' },
@@ -96,16 +107,19 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         break;
       case "teacher":
         const teacherSubjects = await prisma.subject.findMany({
+          where: schoolFilter,
           select: { id: true, name: true },
         });
         relatedData = { subjects: teacherSubjects };
         break;
       case "student":
         const studentGrades = await prisma.grade.findMany({
+          // Remove school filter for grades - they should be universal
           select: { id: true, level: true, name: true },
           orderBy: [{ level: 'asc' }]
         });
         const studentClasses = await prisma.class.findMany({
+          where: schoolFilter,
           include: { _count: { select: { students: true } } },
         });
         relatedData = { classes: studentClasses, grades: studentGrades };
@@ -114,20 +128,22 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch subjects with teacher filter if role is teacher
         const examSubjects = await prisma.subject.findMany({
           where: role === "teacher" ? {
+            ...schoolFilter,
             teachers: {
               some: {
                 id: currentUserId!
               }
             }
-          } : undefined,
+          } : schoolFilter,
           select: { id: true, name: true },
         });
         
         // Fetch classes for the teacher or all classes for admin
         const examClasses = await prisma.class.findMany({
           where: role === "teacher" ? {
+            ...schoolFilter,
             supervisorId: currentUserId!
-          } : undefined,
+          } : schoolFilter,
           select: { id: true, name: true },
         });
         
@@ -141,10 +157,12 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch classes and fee types for dropdowns
         const [classFeeClasses, feeTypes] = await Promise.all([
           prisma.class.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.feeType.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
@@ -159,6 +177,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
       case "parent":
         // Fetch all grades for filtering
         const parentGrades = await prisma.grade.findMany({
+          // Remove school filter for grades - they should be universal
           select: { id: true, level: true, name: true },
           orderBy: { level: 'asc' }
         });
@@ -166,6 +185,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch all students without parents
         const availableStudents = await prisma.student.findMany({
           where: {
+            ...schoolFilter,
             OR: [
               { parentId: null },
               // Include current parent's students when updating
@@ -193,10 +213,12 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
       case "attendance":
         const [attendanceClasses, allStudents] = await Promise.all([
           prisma.class.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { id: true, name: true }
           }),
           prisma.student.findMany({
+            where: schoolFilter,
             orderBy: { name: "asc" },
             select: { 
               id: true, 

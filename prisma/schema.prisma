@@ -22,7 +22,6 @@ model School {
   students    Student[]
   teachers    Teacher[]
   parents     Parent[]
-  grades      Grade[]
   classes     Class[]
   subjects    Subject[]
   lessons     Lesson[]
@@ -118,15 +117,10 @@ model Parent {
 
 model Grade {
   id       Int       @id @default(autoincrement())
-  level    Int
-  name     String
-  schoolId String
+  level    Int       @unique
+  name     String    @unique
   classess Class[]
-  school   School    @relation(fields: [schoolId], references: [id])
   students Student[]
-  
-  @@unique([level, schoolId])
-  @@unique([name, schoolId])
 }
 
 model Class {

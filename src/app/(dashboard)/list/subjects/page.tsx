@@ -7,6 +7,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma, Subject, Teacher } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type SubjectList = Subject & { teachers: Teacher[] };
 
@@ -17,6 +18,9 @@ const SubjectListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
 
   const columns = [
     {
@@ -41,7 +45,9 @@ const SubjectListPage = async ({
   const p = page ? parseInt(page) : 1;
 
   // URL PARAMS CONDITION
-  const query: Prisma.SubjectWhereInput = {};
+  const query: Prisma.SubjectWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   // Process standard filter parameters first
   if (queryParams) {

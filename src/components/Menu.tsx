@@ -3,6 +3,29 @@ import MenuClient from "./MenuClient";
 
 const menuItems = [
 	{
+		title: "SUPER ADMIN",
+		items: [
+			{
+				icon: "/home.png",
+				label: "Dashboard",
+				href: "/super-admin",
+				visible: ["super_admin"],
+			},
+			{
+				icon: "/singleBranch.png",
+				label: "Schools",
+				href: "/list/schools",
+				visible: ["super_admin"],
+			},
+			{
+				icon: "/profile.png",
+				label: "Admins",
+				href: "/list/admins",
+				visible: ["super_admin"],
+			},
+		],
+	},
+	{
 		title: "MENU",
 		items: [
 			{
@@ -108,7 +131,15 @@ const menuItems = [
 const Menu = async () => {
 	const user = await currentUser();
 	const role = user?.publicMetadata.role as string;
-	return <MenuClient role={role} menuItems={menuItems} />;
+	const adminRole = user?.publicMetadata.adminRole as string;
+	
+	// Determine the effective role for menu display
+	let effectiveRole = role;
+	if (role === "admin" && adminRole === "SUPER_ADMIN") {
+		effectiveRole = "super_admin";
+	}
+	
+	return <MenuClient role={effectiveRole} menuItems={menuItems} />;
 };
 
 export default Menu;

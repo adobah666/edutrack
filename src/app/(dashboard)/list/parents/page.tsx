@@ -4,11 +4,12 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { Parent, Prisma, Student } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import Image from "next/image";
 import ParentRow from "@/components/ParentRow";
 
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const ParentListPage = async ({
   searchParams,
@@ -17,6 +18,9 @@ const ParentListPage = async ({
 }) => {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
 
   const columns = [
     {
@@ -53,7 +57,9 @@ const ParentListPage = async ({
   const p = page ? parseInt(page) : 1;
 
   // Build search query for both parent name and student name
-  const query: Prisma.ParentWhereInput = {};
+  const query: Prisma.ParentWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   if (queryParams.search) {
     const searchTerm = queryParams.search;

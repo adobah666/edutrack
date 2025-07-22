@@ -13,6 +13,10 @@ import {
   deleteEvent,
   deleteAnnouncement,
 } from "@/lib/actions";
+import {
+  deleteSchool,
+  deleteAdmin,
+} from "@/lib/school-actions";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -34,6 +38,8 @@ const deleteActionMap = {
   attendance: deleteAttendance,
   event: deleteEvent,
   announcement: deleteAnnouncement,
+  school: deleteSchool,
+  admin: deleteAdmin,
   studentFee: async (prevState: any, formData: FormData) => {
     try {
       const id = formData.get("id");
@@ -249,6 +255,12 @@ const ClassFeeForm = dynamic(() => import("./forms/ClassFeeForm"), {
 const StudentFeeForm = dynamic(() => import("./forms/StudentFeeForm"), {
   loading: () => <h1>Loading...</h1>,
 });
+const SchoolForm = dynamic(() => import("./forms/SchoolForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const AdminForm = dynamic(() => import("./forms/AdminForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
 
 const forms: {
   [key: string]: (
@@ -376,6 +388,22 @@ const forms: {
       type={type}
       data={data}
       setOpen={setOpen}
+    />
+  ),
+  school: (setOpen, type, data, relatedData) => (
+    <SchoolForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  admin: (setOpen, type, data, relatedData) => (
+    <AdminForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
     />
   ),
 };

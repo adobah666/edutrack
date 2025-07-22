@@ -7,9 +7,52 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model School {
+  id          String   @id @default(cuid())
+  name        String
+  address     String
+  phone       String?
+  email       String?
+  logo        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  admins      Admin[]
+  students    Student[]
+  teachers    Teacher[]
+  parents     Parent[]
+  grades      Grade[]
+  classes     Class[]
+  subjects    Subject[]
+  lessons     Lesson[]
+  exams       Exam[]
+  assignments Assignment[]
+  results     Result[]
+  attendances Attendance[]
+  events      Event[]
+  announcements Announcement[]
+  feeTypes    FeeType[]
+  classFees   ClassFee[]
+  studentFees StudentFee[]
+  feeReminders FeeReminder[]
+}
+
 model Admin {
-  id       String @id
-  username String @unique
+  id       String    @id
+  username String    @unique
+  name     String
+  surname  String
+  email    String?   @unique
+  role     AdminRole @default(SCHOOL_ADMIN)
+  schoolId String?
+  
+  school   School?   @relation(fields: [schoolId], references: [id])
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  SCHOOL_ADMIN
 }
 
 model Student {
@@ -25,12 +68,14 @@ model Student {
   parentId    String?
   classId     Int
   gradeId     Int
+  schoolId    String
   birthday    DateTime
   attendances Attendance[]
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   grade       Grade        @relation(fields: [gradeId], references: [id])
   parent      Parent?      @relation(fields: [parentId], references: [id])
+  school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
 }
 
@@ -46,11 +91,13 @@ model Teacher {
   bloodType     String
   sex           UserSex
   createdAt     DateTime       @default(now())
+  schoolId      String
   birthday      DateTime
   announcements Announcement[]
   assignments   Assignment[]   @relation("TeacherToAssignment")
   classes       Class[]
   lessons       Lesson[]
+  school        School         @relation(fields: [schoolId], references: [id])
   subjects      Subject[]      @relation("SubjectToTeacher")
 }
 
@@ -63,43 +110,58 @@ model Parent {
   phone     String    @unique
   address   String
   createdAt DateTime  @default(now())
+  schoolId  String
   img       String?
+  school    School    @relation(fields: [schoolId], references: [id])
   students  Student[]
 }
 
 model Grade {
   id       Int       @id @default(autoincrement())
-  level    Int       @unique
-  name     String    @unique
+  level    Int
+  name     String
+  schoolId String
   classess Class[]
+  school   School    @relation(fields: [schoolId], references: [id])
   students Student[]
+  
+  @@unique([level, schoolId])
+  @@unique([name, schoolId])
 }
 
 model Class {
   id            Int            @id @default(autoincrement())
-  name          String         @unique
+  name          String
   capacity      Int
   supervisorId  String?
   gradeId       Int
+  schoolId      String
   announcements Announcement[]
   assignments   Assignment[]
   attendances   Attendance[]
   grade         Grade          @relation(fields: [gradeId], references: [id])
+  school        School         @relation(fields: [schoolId], references: [id])
   supervisor    Teacher?       @relation(fields: [supervisorId], references: [id])
   classFees     ClassFee[]
   events        Event[]
   exams         Exam[]
   lessons       Lesson[]
   students      Student[]
+  
+  @@unique([name, schoolId])
 }
 
 model Subject {
   id          Int          @id @default(autoincrement())
-  name        String       @unique
+  name        String
+  schoolId    String
   assignments Assignment[]
   exams       Exam[]
   lessons     Lesson[]
+  school      School       @relation(fields: [schoolId], references: [id])
   teachers    Teacher[]    @relation("SubjectToTeacher")
+  
+  @@unique([name, schoolId])
 }
 
 model Lesson {
@@ -111,7 +173,9 @@ model Lesson {
   subjectId Int
   classId   Int
   teacherId String
+  schoolId  String
   class     Class    @relation(fields: [classId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
   subject   Subject  @relation(fields: [subjectId], references: [id])
   teacher   Teacher  @relation(fields: [teacherId], references: [id])
 }
@@ -124,7 +188,9 @@ model Exam {
   term      Term     @default(FIRST)
   classId   Int?
   subjectId Int?
+  schoolId  String
   class     Class?   @relation(fields: [classId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
   subject   Subject? @relation(fields: [subjectId], references: [id])
   results   Result[]
 }
@@ -139,7 +205,9 @@ model Assignment {
   maxPoints   Int      @default(0)
   subjectId   Int
   teacherId   String
+  schoolId    String
   class       Class    @relation(fields: [classId], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
   subject     Subject  @relation(fields: [subjectId], references: [id])
   teacher     Teacher  @relation("TeacherToAssignment", fields: [teacherId], references: [id])
   results     Result[]
@@ -151,9 +219,11 @@ model Result {
   examId       Int?
   assignmentId Int?
   studentId    String
+  schoolId     String
   feedback     String?
   assignment   Assignment? @relation(fields: [assignmentId], references: [id])
   exam         Exam?       @relation(fields: [examId], references: [id])
+  school       School      @relation(fields: [schoolId], references: [id])
   student      Student     @relation(fields: [studentId], references: [id])
 }
 
@@ -163,7 +233,9 @@ model Attendance {
   present   Boolean
   studentId String
   classId   Int
+  schoolId  String
   class     Class    @relation(fields: [classId], references: [id])
+  school    School   @relation(fields: [schoolId], references: [id])
   student   Student  @relation(fields: [studentId], references: [id])
 
   @@unique([studentId, date, classId], map: "unique_student_date_attendance")
@@ -176,7 +248,9 @@ model Event {
   startTime   DateTime
   endTime     DateTime
   classId     Int?
+  schoolId    String
   class       Class?   @relation(fields: [classId], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
 }
 
 model Announcement {
@@ -187,15 +261,21 @@ model Announcement {
   classId     Int?
   priority    Priority @default(MEDIUM)
   teacherId   String?
+  schoolId    String
   class       Class?   @relation(fields: [classId], references: [id])
+  school      School   @relation(fields: [schoolId], references: [id])
   teacher     Teacher? @relation(fields: [teacherId], references: [id])
 }
 
 model FeeType {
   id          Int        @id @default(autoincrement())
-  name        String     @unique
+  name        String
   description String?
+  schoolId    String
   classFees   ClassFee[]
+  school      School     @relation(fields: [schoolId], references: [id])
+  
+  @@unique([name, schoolId])
 }
 
 model ClassFee {
@@ -204,8 +284,10 @@ model ClassFee {
   dueDate     DateTime
   classId     Int
   feeTypeId   Int
+  schoolId    String
   class       Class        @relation(fields: [classId], references: [id])
   feeType     FeeType      @relation(fields: [feeTypeId], references: [id])
+  school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
 }
 
@@ -215,8 +297,10 @@ model StudentFee {
   paidDate   DateTime      @default(now())
   studentId  String
   classFeeId Int
+  schoolId   String
   reminders  FeeReminder[]
   classFee   ClassFee      @relation(fields: [classFeeId], references: [id])
+  school     School        @relation(fields: [schoolId], references: [id])
   student    Student       @relation(fields: [studentId], references: [id])
 }
 
@@ -227,6 +311,8 @@ model FeeReminder {
   sentDate     DateTime     @default(now())
   successful   Boolean      @default(true)
   error        String?
+  schoolId     String
+  school       School       @relation(fields: [schoolId], references: [id])
   studentFee   StudentFee   @relation(fields: [studentFeeId], references: [id])
 }
 

@@ -33,8 +33,6 @@ const StudentForm = ({
     register,
     handleSubmit,
     formState: { errors },
-    watch,
-    setValue,
   } = useForm<StudentSchema>({
     resolver: zodResolver(studentSchema),
     defaultValues: {
@@ -49,7 +47,6 @@ const StudentForm = ({
       sex: data?.sex || "MALE",
       gradeId: data?.gradeId || "",
       classId: data?.classId || "",
-      parentId: data?.parentId || "", // Empty string for optional field
       id: data?.id || undefined,
     }
   });
@@ -71,14 +68,12 @@ const StudentForm = ({
   const onSubmit = handleSubmit(async (formData) => {
     try {
       setIsSubmitting(true);
-      // Format the data properly for Clerk requirements
+      // Format the data properly for submission
       const userData = {
         ...formData,
-        // If parentId is empty string, null, or "0", set it to undefined
-        parentId: !formData.parentId || formData.parentId === "0" ? undefined : formData.parentId,
         img: img?.secure_url || data?.img,
       };
-      
+
       await formAction(userData);
       // The form state and any errors will be handled by the useEffect
     } catch (error) {
@@ -131,11 +126,11 @@ const StudentForm = ({
         <div className="flex items-center gap-4">
           {img && (
             <div className="relative h-32 w-32 rounded-md overflow-hidden border border-gray-300">
-              <Image 
-                src={img.secure_url || img} 
-                alt="Student profile" 
-                fill 
-                style={{ objectFit: 'cover' }} 
+              <Image
+                src={img.secure_url || img}
+                alt="Student profile"
+                fill
+                style={{ objectFit: 'cover' }}
               />
             </div>
           )}
@@ -278,45 +273,17 @@ const StudentForm = ({
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Parent (Optional)</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("parentId")}
-          >
-            <option value="">-- No Parent --</option>
-            {parents && parents.length > 0 ? (
-              parents.map(
-                (parent: {
-                  id: string;
-                  name: string;
-                  surname: string;
-                }) => (
-                  <option value={parent.id} key={parent.id}>
-                    {parent.name} {parent.surname}
-                  </option>
-                )
-              )
-            ) : (
-              <option value="" disabled>No parents available</option>
-            )}
-          </select>
-          {errors.parentId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.parentId.message.toString()}
-            </p>
-          )}
-        </div>
+
       </div>
-      <button 
-        type="submit" 
+      <button
+        type="submit"
         className="bg-blue-400 text-white p-2 rounded-md hover:bg-blue-500 transition-colors disabled:bg-gray-300"
         disabled={isSubmitting}
       >
-        {isSubmitting 
-          ? "Processing..." 
-          : type === "create" 
-            ? "Create Student" 
+        {isSubmitting
+          ? "Processing..."
+          : type === "create"
+            ? "Create Student"
             : "Update Student"
         }
       </button>

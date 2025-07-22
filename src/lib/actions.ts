@@ -422,14 +422,14 @@ export const deleteTeacher = async (
     // First check if the user exists in Clerk
     try {
       await clerkClient.users.getUser(id);
+      // If user exists in Clerk, delete them
+      await clerkClient.users.deleteUser(id);
     } catch (error) {
-      console.error("Clerk user not found:", error);
-      return { success: false, error: true, message: "Clerk user not found" };
+      // If Clerk user not found, just log it but continue with database deletion
+      console.log("Clerk user not found, proceeding with database deletion only");
     }
 
-    // Proceed to delete if user exists
-    await clerkClient.users.deleteUser(id);
-
+    // Delete the teacher from the database regardless of Clerk status
     await prisma.teacher.delete({
       where: { id },
     });

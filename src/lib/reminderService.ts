@@ -81,6 +81,7 @@ export async function sendUpcomingPaymentReminders() {
               sentDate: today,
               successful: result.success,
               error: result.error ? String(result.error) : null,
+              schoolId: fee.schoolId,
             },
           });
 
@@ -162,6 +163,7 @@ export async function sendOverduePaymentReminders() {
               sentDate: today,
               successful: result.success,
               error: result.error ? String(result.error) : null,
+              schoolId: fee.schoolId,
             },
           });
 

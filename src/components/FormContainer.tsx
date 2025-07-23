@@ -41,7 +41,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
     switch (table) {
       case "subject":
         const subjectTeachers = await prisma.teacher.findMany({
-          where: schoolFilter,
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
           select: { id: true, name: true, surname: true },
         });
         relatedData = { teachers: subjectTeachers };
@@ -50,17 +50,17 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch subjects, classes and teachers for dropdowns 
         const [lessonSubjects, lessonClasses, lessonTeachers] = await Promise.all([
           prisma.subject.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.class.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.teacher.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true, surname: true },
           }),
@@ -74,7 +74,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         break;
       case "event":
         const eventClasses = await prisma.class.findMany({
-          where: schoolFilter,
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
           select: { id: true, name: true },
           orderBy: { name: 'asc' }
         });
@@ -98,7 +98,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         console.log('Fetched grades:', classGrades); // Debug log
         
         const classTeachers = await prisma.teacher.findMany({
-          where: schoolFilter,
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
           select: { id: true, name: true, surname: true },
           orderBy: [
             { name: 'asc' },
@@ -109,7 +109,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         break;
       case "teacher":
         const teacherSubjects = await prisma.subject.findMany({
-          where: schoolFilter,
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
           select: { id: true, name: true },
         });
         relatedData = { subjects: teacherSubjects };
@@ -121,7 +121,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           orderBy: [{ level: 'asc' }]
         });
         const studentClasses = await prisma.class.findMany({
-          where: schoolFilter,
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
           include: { _count: { select: { students: true } } },
         });
         relatedData = { classes: studentClasses, grades: studentGrades };
@@ -130,22 +130,22 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch subjects with teacher filter if role is teacher
         const examSubjects = await prisma.subject.findMany({
           where: role === "teacher" ? {
-            ...schoolFilter,
+            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
             teachers: {
               some: {
                 id: currentUserId!
               }
             }
-          } : schoolFilter,
+          } : (schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
           select: { id: true, name: true },
         });
         
         // Fetch classes for the teacher or all classes for admin
         const examClasses = await prisma.class.findMany({
           where: role === "teacher" ? {
-            ...schoolFilter,
+            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
             supervisorId: currentUserId!
-          } : schoolFilter,
+          } : (schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
           select: { id: true, name: true },
         });
         
@@ -159,12 +159,12 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch classes and fee types for dropdowns
         const [classFeeClasses, feeTypes] = await Promise.all([
           prisma.class.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
           prisma.feeType.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true },
           }),
@@ -187,7 +187,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // Fetch all students without parents
         const availableStudents = await prisma.student.findMany({
           where: {
-            ...schoolFilter,
+            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
             OR: [
               { parentId: null },
               // Include current parent's students when updating
@@ -215,12 +215,12 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
       case "attendance":
         const [attendanceClasses, allStudents] = await Promise.all([
           prisma.class.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { id: true, name: true }
           }),
           prisma.student.findMany({
-            where: schoolFilter,
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
             select: { 
               id: true, 

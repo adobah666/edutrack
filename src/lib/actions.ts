@@ -30,14 +30,14 @@ export const createSubject = async (
   try {
     // Get the current user's school context
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -114,14 +114,14 @@ export const createParent = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -216,14 +216,14 @@ export const createClass = async (
   try {
     // Get the current user's school context
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -292,14 +292,14 @@ export const createTeacher = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -360,10 +360,10 @@ export const createTeacher = async (
       });
     } catch (error) {
       console.error("Error creating user in Clerk:", error);
-      
+
       // Extract specific error message from Clerk's error structure
       let errorMessage = "Error creating user account";
-      
+
       if (error && typeof error === 'object' && 'errors' in error) {
         const clerkError = error as any;
         if (clerkError.errors && clerkError.errors.length > 0) {
@@ -377,7 +377,7 @@ export const createTeacher = async (
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
+
       return {
         success: false,
         error: true,
@@ -486,7 +486,7 @@ export const deleteTeacher = async (
     // Use a transaction to ensure all operations succeed or fail together
     await prisma.$transaction(async (tx) => {
       // First, handle all foreign key relationships
-      
+
       // 1. Delete or reassign lessons taught by this teacher
       await tx.lesson.deleteMany({
         where: { teacherId: id },
@@ -548,14 +548,14 @@ export const createStudent = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -604,10 +604,10 @@ export const createStudent = async (
       });
     } catch (error) {
       console.error("Error creating user in Clerk:", error);
-      
+
       // Extract specific error message from Clerk's error structure
       let errorMessage = "Error creating user account";
-      
+
       if (error && typeof error === 'object' && 'errors' in error) {
         const clerkError = error as any;
         if (clerkError.errors && clerkError.errors.length > 0) {
@@ -621,7 +621,7 @@ export const createStudent = async (
       } else if (error instanceof Error) {
         errorMessage = error.message;
       }
-      
+
       return {
         success: false,
         error: true,
@@ -632,14 +632,14 @@ export const createStudent = async (
     try {
       // Get the current user's school context
       const userContext = await getCurrentUserSchool();
-      
-      if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+      if (!userContext.schoolId) {
         return { success: false, error: true, message: "School context not found" };
       }
 
-      // Use the user's school ID, or if super admin, require schoolId in data
-      const schoolId = userContext.schoolId || data.schoolId;
-      
+      // Use the user's school ID
+      const schoolId = userContext.schoolId;
+
       if (!schoolId) {
         return { success: false, error: true, message: "School ID is required" };
       }
@@ -782,14 +782,14 @@ export const createExam = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -879,14 +879,14 @@ export const createLesson = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -1177,14 +1177,14 @@ export const createAssignment = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -1289,7 +1289,7 @@ export const createAttendance = async (
             present: student.isPresent,
             studentId: student.id,
             classId: data.classId,
-            schoolId: schoolFilter.schoolId,
+            schoolId: schoolFilter.schoolId!,
           },
           update: {
             present: student.isPresent,
@@ -1314,6 +1314,12 @@ export const updateAttendance = async (
   data: AttendanceSchema
 ) => {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    if (!schoolFilter.schoolId) {
+      return { success: false, error: true };
+    }
+
     // Delete existing attendance records for this class and date
     await prisma.attendance.deleteMany({
       where: {
@@ -1329,12 +1335,9 @@ export const updateAttendance = async (
           data: {
             date: data.date,
             present: student.isPresent,
-            student: {
-              connect: { id: student.id },
-            },
-            class: {
-              connect: { id: data.classId },
-            },
+            studentId: student.id,
+            classId: data.classId,
+            schoolId: schoolFilter.schoolId!,
           },
         })
       )
@@ -1376,14 +1379,14 @@ export const createResult = async (
   try {
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
-    
-    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+
+    if (!userContext.schoolId) {
       return { success: false, error: true, message: "School context not found" };
     }
 
-    // Use the user's school ID, or if super admin, require schoolId in data
-    const schoolId = userContext.schoolId || data.schoolId;
-    
+    // Use the user's school ID
+    const schoolId = userContext.schoolId;
+
     if (!schoolId) {
       return { success: false, error: true, message: "School ID is required" };
     }
@@ -1477,11 +1480,11 @@ export const createEvent = async (
     if (data.allClasses) {
       // If "All Classes" is selected, get all class IDs for this school
       const allClasses = await prisma.class.findMany({
-        where: schoolFilter,
+        where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
         select: { id: true },
       });
       classIdsToCreate = allClasses.map(cls => cls.id);
-      
+
       // Also create one event with no class (school-wide)
       classIdsToCreate.push(null);
     } else if (data.classIds && data.classIds.length > 0) {
@@ -1502,7 +1505,7 @@ export const createEvent = async (
             startTime: data.startTime,
             endTime: data.endTime,
             classId: classId,
-            schoolId: schoolFilter.schoolId,
+            schoolId: schoolFilter.schoolId!,
           },
         })
       )
@@ -1688,9 +1691,9 @@ export async function getClasses() {
   try {
     // Get school filter for current user
     const schoolFilter = await getSchoolFilter();
-    
+
     const classes = await prisma.class.findMany({
-      where: schoolFilter, // Add school filtering
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       include: {
         supervisor: true,
       },
@@ -1744,14 +1747,14 @@ export async function fetchExams() {
       where:
         role === "teacher" && userId
           ? {
-              subject: {
-                teachers: {
-                  some: {
-                    id: userId,
-                  },
+            subject: {
+              teachers: {
+                some: {
+                  id: userId,
                 },
               },
-            }
+            },
+          }
           : undefined,
       select: {
         id: true,
@@ -1788,9 +1791,9 @@ export async function getTeachers() {
   try {
     // Get school filter for current user
     const schoolFilter = await getSchoolFilter();
-    
+
     const teachers = await prisma.teacher.findMany({
-      where: schoolFilter, // Add school filtering
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       orderBy: [
         { name: "asc" },
         { surname: "asc" },

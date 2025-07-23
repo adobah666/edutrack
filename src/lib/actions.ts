@@ -18,6 +18,7 @@ import { AssignmentSchema } from "./formValidationSchemas";
 import { ResultSchema, AttendanceSchema } from "./formValidationSchemas";
 import { EventSchema } from "./formValidationSchemas";
 import { AnnouncementSchema } from "./formValidationSchemas";
+import { getSchoolFilter } from "./school-context";
 import { getCurrentUserSchool, requireSchoolAccess } from "./school-context";
 
 type CurrentState = { success: boolean; error: boolean; message?: string };
@@ -1266,6 +1267,12 @@ export const createAttendance = async (
       studentCount: data.students.length,
     });
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    if (!schoolFilter.schoolId) {
+      return { success: false, error: true };
+    }
+
     // Use upsert to handle existing records
     const results = await prisma.$transaction(
       data.students.map((student) =>
@@ -1280,12 +1287,9 @@ export const createAttendance = async (
           create: {
             date: data.date,
             present: student.isPresent,
-            student: {
-              connect: { id: student.id },
-            },
-            class: {
-              connect: { id: data.classId },
-            },
+            studentId: student.id,
+            classId: data.classId,
+            schoolId: schoolFilter.schoolId,
           },
           update: {
             present: student.isPresent,

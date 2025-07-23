@@ -8,6 +8,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Attendance, Prisma, Student, Class } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type AttendanceRecord = Attendance & {
   student: Pick<Student, 'name' | 'surname'>;
@@ -52,8 +53,13 @@ const AttendanceListPage = async ({
   const { page, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   // URL PARAMS CONDITION
-  const query: Prisma.AttendanceWhereInput = {};
+  const query: Prisma.AttendanceWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {
@@ -136,8 +142,8 @@ const AttendanceListPage = async ({
     status: (
       <span
         className={`px-2 py-1 rounded-full text-xs ${item.present
-            ? "bg-green-100 text-green-800"
-            : "bg-red-100 text-red-800"
+          ? "bg-green-100 text-green-800"
+          : "bg-red-100 text-red-800"
           }`}
       >
         {item.present ? "PRESENT" : "ABSENT"}

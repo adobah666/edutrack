@@ -26,7 +26,7 @@ const TeacherListPage = async ({
 
   // Get all subjects for the filter dropdown (filtered by school)
   const subjects = await prisma.subject.findMany({
-    where: schoolFilter,
+    where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
     orderBy: {
       name: 'asc',
     },
@@ -83,7 +83,7 @@ const TeacherListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.TeacherWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   // Process standard filter parameters

@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
+import { Prisma } from "@prisma/client";
 import ExamList from "./ExamList";
 import { getSchoolFilter } from "@/lib/school-context";
 
@@ -22,8 +23,8 @@ export default async function ExamListPage({
   // Get school filter for current user
   const schoolFilter = await getSchoolFilter();
 
-  const query = {
-    ...schoolFilter, // Add school filtering
+  const query: Prisma.ExamWhereInput = {
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
     ...(q ? {
       OR: [
         { title: { contains: q, mode: 'insensitive' as const } },

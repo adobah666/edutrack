@@ -21,13 +21,13 @@ export async function GET() {
     // Fetch subjects with teacher filter if role is teacher
     const subjects = await prisma.subject.findMany({
       where: role === "teacher" ? {
-        ...schoolFilter,
+        ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
         teachers: {
           some: {
             id: userId
           }
         }
-      } : schoolFilter,
+      } : (schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
     });
@@ -35,9 +35,9 @@ export async function GET() {
     // Fetch classes for the teacher or all classes for admin
     const classes = await prisma.class.findMany({
       where: role === "teacher" ? {
-        ...schoolFilter,
+        ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
         supervisorId: userId
-      } : schoolFilter,
+      } : (schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
       select: { id: true, name: true },
       orderBy: { name: 'asc' },
     });

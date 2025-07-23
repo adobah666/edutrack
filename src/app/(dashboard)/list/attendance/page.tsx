@@ -14,7 +14,16 @@ import { getSchoolFilter } from "@/lib/school-context";
 
 type AttendanceRecord = Attendance & {
   student: Pick<Student, 'name' | 'surname'>;
-  class: Pick<Class, 'name'>;
+};
+
+type ClassWithCounts = Class & {
+  _count: {
+    students: number;
+    attendances: number;
+  };
+  attendances: {
+    date: Date;
+  }[];
 };
 
 const AttendanceListPage = async ({
@@ -38,8 +47,8 @@ const AttendanceListPage = async ({
   // If no class is selected, show class list
   if (!classId) {
     // Fetch classes with attendance statistics
-    const classes = await prisma.class.findMany({
-      where: schoolFilter,
+    const classes: ClassWithCounts[] = await prisma.class.findMany({
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
       include: {
         _count: {
           select: {
@@ -67,12 +76,12 @@ const AttendanceListPage = async ({
     const [totalStudents, attendanceForDate] = await prisma.$transaction([
       // Total enrolled students across all classes
       prisma.student.count({
-        where: schoolFilter,
+        where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
       }),
       // Attendance records for the selected date
       prisma.attendance.findMany({
         where: {
-          ...schoolFilter,
+          ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
           date: {
             gte: dateToCheck,
             lt: new Date(dateToCheck.getTime() + 24 * 60 * 60 * 1000), // Next day
@@ -253,7 +262,10 @@ const AttendanceListPage = async ({
 
   // Get class info
   const selectedClass = await prisma.class.findUnique({
-    where: { id: selectedClassId, ...schoolFilter },
+    where: {
+      id: selectedClassId,
+      ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {})
+    },
     select: { name: true },
   });
 
@@ -290,7 +302,7 @@ const AttendanceListPage = async ({
 
   // Build query for specific class
   const query: Prisma.AttendanceWhereInput = {
-    ...schoolFilter,
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
     classId: selectedClassId,
   };
 
@@ -358,7 +370,7 @@ const AttendanceListPage = async ({
     prisma.attendance.count({ where: query }),
   ]);
 
-  const formattedData = attendanceData.map((item: AttendanceRecord) => ({
+  const formattedData = attendanceData.map((item) => ({
     id: item.id,
     student: `${item.student.name} ${item.student.surname}`,
     date: new Date(item.date).toLocaleDateString(),

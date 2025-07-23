@@ -29,7 +29,7 @@ const AnnouncementListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.AnnouncementWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   if (queryParams) {

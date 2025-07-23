@@ -23,24 +23,24 @@ const AssignmentListPage = async ({
   // Fetch related data for dropdowns (filtered by school)
   const [subjects, classes, teachers] = await Promise.all([
     prisma.subject.findMany({
-      where: schoolFilter,
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.class.findMany({
-      where: schoolFilter,
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.teacher.findMany({
-      where: schoolFilter,
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
       orderBy: [{ name: "asc" }, { surname: "asc" }],
       select: { id: true, name: true, surname: true },
     }),
   ]);
 
   const query: Prisma.AssignmentWhereInput = {
-    ...schoolFilter, // Add school filtering to assignments query
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering to assignments query
   };
 
   if (queryParams) {

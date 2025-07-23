@@ -4,9 +4,9 @@ import FormModal from "./FormModal";
 import { Admin } from "@prisma/client";
 
 type AdminList = Admin & {
-  school?: {
+  school: {
     name: string;
-  };
+  } | null;
 };
 
 const columns = [

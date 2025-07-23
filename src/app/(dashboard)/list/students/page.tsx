@@ -27,7 +27,7 @@ const StudentListPage = async ({
 
   // Get all available classes for the filter (filtered by school)
   const classes = await prisma.class.findMany({
-    where: schoolFilter,
+    where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
     orderBy: {
       name: 'asc',
     },
@@ -47,7 +47,7 @@ const StudentListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.StudentWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   if (queryParams) {

@@ -24,10 +24,14 @@ export async function POST(req: Request) {
     const classFeeId = parseInt(formData.get("classFeeId") as string);
 
     // Validate if the payment amount is valid (with school filtering)
-    const classFee = await prisma.classFee.findUnique({
+    const classFee = await prisma.classFee.findFirst({
       where: { 
         id: classFeeId,
-        ...schoolFilter, // Add school filtering
+        ...(schoolFilter.schoolId ? {
+          class: {
+            schoolId: schoolFilter.schoolId
+          }
+        } : {}), // Add school filtering through class relationship
       },
       include: {
         studentFees: {
@@ -113,7 +117,7 @@ export async function GET() {
     const schoolFilter = await getSchoolFilter();
 
     const studentFees = await prisma.studentFee.findMany({
-      where: schoolFilter, // Add school filtering
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       include: {
         student: true,
         classFee: {

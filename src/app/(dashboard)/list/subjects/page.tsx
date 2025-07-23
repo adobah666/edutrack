@@ -46,7 +46,7 @@ const SubjectListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.SubjectWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   // Process standard filter parameters first

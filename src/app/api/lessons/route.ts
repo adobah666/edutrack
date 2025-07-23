@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
     const lessons = await prisma.lesson.findMany({
       where: {
-        ...schoolFilter, // Add school filtering
+        ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
         ...(teacherId ? { teacherId } : {}),
         ...(classId ? { classId: parseInt(classId) } : {}),
       },

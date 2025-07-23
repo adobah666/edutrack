@@ -10,9 +10,9 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 
 type AdminList = Admin & {
-  school?: {
+  school: {
     name: string;
-  };
+  } | null;
 };
 
 const AdminListPage = async ({

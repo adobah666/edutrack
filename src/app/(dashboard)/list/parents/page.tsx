@@ -58,7 +58,7 @@ const ParentListPage = async ({
 
   // Build search query for both parent name and student name
   const query: Prisma.ParentWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   if (queryParams.search) {

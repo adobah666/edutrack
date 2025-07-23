@@ -17,7 +17,7 @@ const SchedulePage = async ({
 
   // Fetch classes filtered by school
   const classes = await prisma.class.findMany({
-    where: schoolFilter,
+    where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

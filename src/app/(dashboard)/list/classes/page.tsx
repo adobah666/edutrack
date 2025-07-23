@@ -62,7 +62,7 @@ const ClassListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.ClassWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   if (queryParams) {

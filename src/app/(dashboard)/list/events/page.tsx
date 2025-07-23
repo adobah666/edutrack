@@ -28,7 +28,7 @@ const EventListPage = async ({
 
   // URL PARAMS CONDITION
   const query: Prisma.EventWhereInput = {
-    ...schoolFilter, // Add school filtering
+    ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
   };
 
   if (restParams) {

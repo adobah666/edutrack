@@ -56,7 +56,7 @@ const FeesPage = async ({
 
   // Get data
   const { fees, count } = await getFeesData(whereClauseSql, p);
-  const { classes, feeTypes } = await getClassesAndFeeTypes(schoolFilter.schoolId);
+  const { classes, feeTypes } = await getClassesAndFeeTypes(schoolFilter.schoolId || undefined);
 
   return (
     <div>      

@@ -60,7 +60,11 @@ export async function GET() {
     const schoolFilter = await getSchoolFilter();
 
     const classFees = await prisma.classFee.findMany({
-      where: schoolFilter, // Add school filtering
+      where: schoolFilter.schoolId ? {
+        class: {
+          schoolId: schoolFilter.schoolId
+        }
+      } : {}, // Add school filtering through class relationship
       include: {
         class: true,
         feeType: true,

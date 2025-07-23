@@ -19,7 +19,7 @@ export async function GET() {
     const schoolFilter = await getSchoolFilter();
 
     const classes = await prisma.class.findMany({
-      where: schoolFilter, // Add school filtering
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     });

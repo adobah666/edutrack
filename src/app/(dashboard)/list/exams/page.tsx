@@ -2,6 +2,7 @@ import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { auth } from "@clerk/nextjs/server";
 import ExamList from "./ExamList";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type Term = "FIRST" | "SECOND" | "THIRD" | "FINAL";
 
@@ -18,7 +19,11 @@ export default async function ExamListPage({
   const q = searchParams?.q || "";
   const termFilter = searchParams?.term;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   const query = {
+    ...schoolFilter, // Add school filtering
     ...(q ? {
       OR: [
         { title: { contains: q, mode: 'insensitive' as const } },

@@ -88,19 +88,23 @@ interface FeeTypeData {
   name: string;
 }
 
-export async function getClassesAndFeeTypes(): Promise<{
+export async function getClassesAndFeeTypes(schoolId?: string): Promise<{
   classes: ClassData[];
   feeTypes: FeeTypeData[];
 }> {
+  const schoolCondition = schoolId ? Prisma.sql`WHERE "schoolId" = ${schoolId}` : Prisma.empty;
+  
   const [classes, feeTypes] = await Promise.all([
     prisma.$queryRaw<ClassData[]>`
       SELECT id, name
       FROM "Class"
+      ${schoolCondition}
       ORDER BY name ASC
     `,
     prisma.$queryRaw<FeeTypeData[]>`
       SELECT id, name
       FROM "FeeType"
+      ${schoolCondition}
       ORDER BY name ASC
     `,
   ]);

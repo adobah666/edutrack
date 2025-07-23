@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 export async function POST(req: Request) {
   try {
@@ -14,14 +15,20 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const formData = await req.formData();
     const amount = parseFloat(formData.get("amount") as string);
     const studentId = formData.get("studentId") as string;
     const classFeeId = parseInt(formData.get("classFeeId") as string);
 
-    // Validate if the payment amount is valid
+    // Validate if the payment amount is valid (with school filtering)
     const classFee = await prisma.classFee.findUnique({
-      where: { id: classFeeId },
+      where: { 
+        id: classFeeId,
+        ...schoolFilter, // Add school filtering
+      },
       include: {
         studentFees: {
           where: { studentId },
@@ -51,6 +58,7 @@ export async function POST(req: Request) {
         amount,
         studentId,
         classFeeId,
+        schoolId: schoolFilter.schoolId!,
       },
       include: {
         student: {
@@ -101,7 +109,11 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const studentFees = await prisma.studentFee.findMany({
+      where: schoolFilter, // Add school filtering
       include: {
         student: true,
         classFee: {

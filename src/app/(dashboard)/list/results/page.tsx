@@ -4,10 +4,10 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
-import { PrismaClient } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
 import ResultTermFilter from "@/components/ResultTermFilter";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type ExtendedResult = {
   id: number;
@@ -93,11 +93,11 @@ const ResultListPage = async ({
     },
     ...(role === "admin" || role === "teacher"
       ? [
-          {
-            header: "Actions",
-            accessor: "action",
-          },
-        ]
+        {
+          header: "Actions",
+          accessor: "action",
+        },
+      ]
       : []),
   ];
 
@@ -105,8 +105,13 @@ const ResultListPage = async ({
 
   const p = page ? parseInt(page) : 1;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   // URL PARAMS CONDITION
-  const query: any = {};
+  const query: any = {
+    ...schoolFilter, // Add school filtering to results query
+  };
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {
@@ -236,7 +241,7 @@ const ResultListPage = async ({
         ) : null
       };
     }
-  }).filter((item: any): item is { 
+  }).filter((item: any): item is {
     id: number;
     title: string;
     student: string;

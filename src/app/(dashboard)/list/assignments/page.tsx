@@ -3,6 +3,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma } from "@prisma/client";
 import { auth } from "@clerk/nextjs/server";
 import AssignmentList from "@/components/AssignmentList";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const AssignmentListPage = async ({
   searchParams,
@@ -16,23 +17,31 @@ const AssignmentListPage = async ({
   const { page, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
-  // Fetch related data for dropdowns
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
+  // Fetch related data for dropdowns (filtered by school)
   const [subjects, classes, teachers] = await Promise.all([
     prisma.subject.findMany({
+      where: schoolFilter,
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.class.findMany({
+      where: schoolFilter,
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
     prisma.teacher.findMany({
+      where: schoolFilter,
       orderBy: [{ name: "asc" }, { surname: "asc" }],
       select: { id: true, name: true, surname: true },
     }),
   ]);
 
-  const query: Prisma.AssignmentWhereInput = {};
+  const query: Prisma.AssignmentWhereInput = {
+    ...schoolFilter, // Add school filtering to assignments query
+  };
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {

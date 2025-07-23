@@ -2,6 +2,7 @@ import FormContainer from "@/components/FormContainer";
 import BigCalendarContainer from "@/components/BigCalendarContainer";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const SchedulePage = async ({
   searchParams,
@@ -11,8 +12,12 @@ const SchedulePage = async ({
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-  // Fetch all classes
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
+  // Fetch classes filtered by school
   const classes = await prisma.class.findMany({
+    where: schoolFilter,
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
@@ -32,9 +37,9 @@ const SchedulePage = async ({
       </div>
       <div className="bg-white p-4 rounded-md">
         {selectedClassId ? (
-          <BigCalendarContainer 
-            type="classId" 
-            id={selectedClassId} 
+          <BigCalendarContainer
+            type="classId"
+            id={selectedClassId}
             key={`calendar-${selectedClassId}-${Date.now()}`} // Add this line to force remount
           />
         ) : (

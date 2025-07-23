@@ -2,6 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import FeesManagement from "@/components/FeesManagement";
 import { getClassesAndFeeTypes, getFeesData } from "@/lib/prismaQueries";
 import { Prisma } from "@prisma/client";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const FeesPage = async ({
   searchParams,
@@ -15,9 +16,17 @@ const FeesPage = async ({
   const { page, search, classId, feeTypeId, sortBy } = searchParams;
   const p = page ? parseInt(page) : 1;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   // Build the query parts
   const conditions = [];
   const values = [];
+
+  // Add school filtering
+  if (schoolFilter.schoolId) {
+    conditions.push(Prisma.sql`cf."schoolId" = ${schoolFilter.schoolId}`);
+  }
 
   if (classId) {
     conditions.push(Prisma.sql`cf."classId" = ${parseInt(classId)}`);
@@ -47,7 +56,7 @@ const FeesPage = async ({
 
   // Get data
   const { fees, count } = await getFeesData(whereClauseSql, p);
-  const { classes, feeTypes } = await getClassesAndFeeTypes();
+  const { classes, feeTypes } = await getClassesAndFeeTypes(schoolFilter.schoolId);
 
   return (
     <div>      

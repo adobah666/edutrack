@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 // This tells Next.js to always fetch fresh data
 export const dynamic = 'force-dynamic'
@@ -17,6 +18,16 @@ export async function POST(req: Request) {
       );
     }
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    
+    if (!schoolFilter.schoolId) {
+      return NextResponse.json(
+        { message: "School context not found" },
+        { status: 400 }
+      );
+    }
+
     const formData = await req.formData();
     const amount = parseFloat(formData.get("amount") as string);
     const dueDate = new Date(formData.get("dueDate") as string);
@@ -29,6 +40,7 @@ export async function POST(req: Request) {
         dueDate,
         classId,
         feeTypeId,
+        schoolId: schoolFilter.schoolId,
       },
     });
 
@@ -44,7 +56,11 @@ export async function POST(req: Request) {
 
 export async function GET() {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const classFees = await prisma.classFee.findMany({
+      where: schoolFilter, // Add school filtering
       include: {
         class: true,
         feeType: true,

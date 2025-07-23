@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
+import { getSchoolFilter } from '@/lib/school-context';
 
 // This tells Next.js to fetch fresh data on every request
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,12 @@ export async function GET(request: Request) {
       );
     }
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const lessons = await prisma.lesson.findMany({
       where: {
+        ...schoolFilter, // Add school filtering
         ...(teacherId ? { teacherId } : {}),
         ...(classId ? { classId: parseInt(classId) } : {}),
       },

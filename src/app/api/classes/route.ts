@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
+import { getSchoolFilter } from '@/lib/school-context';
 
 export async function GET() {
   try {
@@ -14,7 +15,11 @@ export async function GET() {
       );
     }
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const classes = await prisma.class.findMany({
+      where: schoolFilter, // Add school filtering
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     });

@@ -779,12 +779,29 @@ export const createExam = async (
   data: ExamSchema
 ) => {
   try {
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     await prisma.exam.create({
       data: {
         title: data.title,
         startTime: data.startTime,
         endTime: data.endTime,
         term: data.term,
+        school: {
+          connect: { id: schoolId },
+        },
         subject: {
           connect: { id: data.subjectId },
         },
@@ -859,6 +876,20 @@ export const createLesson = async (
   data: LessonSchema
 ) => {
   try {
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     // Create ISO DateTime strings for start and end times by combining today's date with input times
     const [startHour, startMinute] = data.startTime.split(":");
     const [endHour, endMinute] = data.endTime.split(":");
@@ -959,6 +990,9 @@ export const createLesson = async (
         day: data.day as Day,
         startTime: startTime.toISOString(),
         endTime: endTime.toISOString(),
+        school: {
+          connect: { id: schoolId },
+        },
         subject: {
           connect: { id: data.subjectId },
         },
@@ -1140,6 +1174,20 @@ export const createAssignment = async (
   data: AssignmentSchema
 ) => {
   try {
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     await prisma.assignment.create({
       data: {
         title: data.title,
@@ -1147,6 +1195,9 @@ export const createAssignment = async (
         startDate: data.startDate || new Date(),
         dueDate: data.dueDate,
         maxPoints: data.maxPoints,
+        school: {
+          connect: { id: schoolId },
+        },
         class: {
           connect: { id: data.classId },
         },
@@ -1319,10 +1370,27 @@ export const createResult = async (
   data: ResultSchema
 ) => {
   try {
+    // FIRST: Validate school context before doing anything else
+    const userContext = await getCurrentUserSchool();
+    
+    if (!userContext.schoolId && !userContext.canAccessAllSchools) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Use the user's school ID, or if super admin, require schoolId in data
+    const schoolId = userContext.schoolId || data.schoolId;
+    
+    if (!schoolId) {
+      return { success: false, error: true, message: "School ID is required" };
+    }
+
     await prisma.result.create({
       data: {
         score: data.score,
         feedback: data.feedback || null,
+        school: {
+          connect: { id: schoolId },
+        },
         exam: {
           connect: { id: data.examId },
         },

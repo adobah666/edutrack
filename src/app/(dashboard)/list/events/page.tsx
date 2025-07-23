@@ -7,6 +7,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Class, Event, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type EventList = Event & { class: Class | null };
 
@@ -22,8 +23,13 @@ const EventListPage = async ({
   const { page: pageStr, ...restParams } = searchParams;
   const p = pageStr ? parseInt(pageStr) : 1;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   // URL PARAMS CONDITION
-  const query: Prisma.EventWhereInput = {};
+  const query: Prisma.EventWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   if (restParams) {
     for (const [key, value] of Object.entries(restParams)) {

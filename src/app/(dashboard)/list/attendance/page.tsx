@@ -3,6 +3,7 @@ import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import AttendanceFilters from "@/components/AttendanceFilters";
+import DateSelector from "@/components/DateSelector";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Attendance, Prisma, Student, Class } from "@prisma/client";
@@ -27,8 +28,12 @@ const AttendanceListPage = async ({
   // Get school filter for current user
   const schoolFilter = await getSchoolFilter();
 
-  const { classId, page, ...queryParams } = searchParams;
+  const { classId, page, selectedDate, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
+
+  // Use selected date or default to today
+  const dateToCheck = selectedDate ? new Date(selectedDate) : new Date();
+  dateToCheck.setHours(0, 0, 0, 0); // Reset time to start of day
 
   // If no class is selected, show class list
   if (!classId) {
@@ -58,6 +63,48 @@ const AttendanceListPage = async ({
       },
     });
 
+    // Get attendance summary for the selected date
+    const [totalStudents, attendanceForDate] = await prisma.$transaction([
+      // Total enrolled students across all classes
+      prisma.student.count({
+        where: schoolFilter,
+      }),
+      // Attendance records for the selected date
+      prisma.attendance.findMany({
+        where: {
+          ...schoolFilter,
+          date: {
+            gte: dateToCheck,
+            lt: new Date(dateToCheck.getTime() + 24 * 60 * 60 * 1000), // Next day
+          },
+        },
+        include: {
+          class: {
+            select: { name: true },
+          },
+        },
+      }),
+    ]);
+
+    const presentCount = attendanceForDate.filter(record => record.present).length;
+    const absentCount = attendanceForDate.filter(record => !record.present).length;
+    const totalRecorded = attendanceForDate.length;
+
+    // Group attendance by class for the selected date
+    const attendanceByClass = attendanceForDate.reduce((acc, record) => {
+      const className = record.class.name;
+      if (!acc[className]) {
+        acc[className] = { present: 0, absent: 0, total: 0 };
+      }
+      if (record.present) {
+        acc[className].present++;
+      } else {
+        acc[className].absent++;
+      }
+      acc[className].total++;
+      return acc;
+    }, {} as Record<string, { present: number; absent: number; total: number }>);
+
     return (
       <div className="bg-white p-4 sm:px-6 lg:px-8 rounded-md flex-1">
         {/* TOP */}
@@ -66,6 +113,84 @@ const AttendanceListPage = async ({
           <div className="flex items-center gap-4">
             {(role === "admin" || role === "teacher") && (
               <FormContainer table="attendance" type="create" />
+            )}
+          </div>
+        </div>
+
+        {/* DATE SELECTOR AND SUMMARY */}
+        <div className="mb-6 space-y-4">
+          {/* Date Selector */}
+          <DateSelector selectedDate={selectedDate} />
+
+          {/* Attendance Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-blue-600 font-medium">Total Enrolled</p>
+                  <p className="text-2xl font-bold text-blue-800">{totalStudents}</p>
+                </div>
+                <Image src="/student.png" alt="" width={32} height={32} className="opacity-60" />
+              </div>
+            </div>
+
+            <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-green-600 font-medium">Present</p>
+                  <p className="text-2xl font-bold text-green-800">{presentCount}</p>
+                </div>
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                  <span className="text-green-600 text-lg">✓</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-red-600 font-medium">Absent</p>
+                  <p className="text-2xl font-bold text-red-800">{absentCount}</p>
+                </div>
+                <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                  <span className="text-red-600 text-lg">✗</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-600 font-medium">Attendance Rate</p>
+                  <p className="text-2xl font-bold text-gray-800">
+                    {totalRecorded > 0 ? Math.round((presentCount / totalRecorded) * 100) : 0}%
+                  </p>
+                </div>
+                <Image src="/attendance.png" alt="" width={32} height={32} className="opacity-60" />
+              </div>
+            </div>
+          </div>
+
+          {/* Date Summary */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h3 className="text-sm font-medium text-gray-700 mb-2">
+              Attendance Summary for {dateToCheck.toLocaleDateString()}
+            </h3>
+            {totalRecorded > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {Object.entries(attendanceByClass).map(([className, stats]) => (
+                  <div key={className} className="bg-white p-3 rounded border">
+                    <h4 className="font-medium text-gray-800 mb-2">{className}</h4>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-green-600">Present: {stats.present}</span>
+                      <span className="text-red-600">Absent: {stats.absent}</span>
+                      <span className="text-gray-600">Total: {stats.total}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 text-sm">No attendance records found for this date.</p>
             )}
           </div>
         </div>

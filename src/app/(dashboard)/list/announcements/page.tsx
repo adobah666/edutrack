@@ -7,6 +7,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Announcement, Class, Prisma } from "@prisma/client";
 import Image from "next/image";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 type AnnouncementList = Announcement & { class: Class | null };
 
@@ -23,8 +24,13 @@ const AnnouncementListPage = async ({
 
   const p = page ? parseInt(page) : 1;
 
+  // Get school filter for current user
+  const schoolFilter = await getSchoolFilter();
+
   // URL PARAMS CONDITION
-  const query: Prisma.AnnouncementWhereInput = {};
+  const query: Prisma.AnnouncementWhereInput = {
+    ...schoolFilter, // Add school filtering
+  };
 
   if (queryParams) {
     for (const [key, value] of Object.entries(queryParams)) {

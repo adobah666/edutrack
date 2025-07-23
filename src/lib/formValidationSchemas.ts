@@ -178,7 +178,8 @@ export const eventSchema = z.object({
   description: z.string().min(1, { message: "Description is required" }),
   startTime: z.coerce.date({ message: "Start time is required" }),
   endTime: z.coerce.date({ message: "End time is required" }),
-  classId: z.coerce.number().optional(),
+  classIds: z.array(z.coerce.number()).optional(), // Changed to support multiple classes
+  allClasses: z.boolean().optional(), // Option to select all classes
 });
 
 export type EventSchema = z.infer<typeof eventSchema>;

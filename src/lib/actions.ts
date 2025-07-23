@@ -1466,15 +1466,47 @@ export const createEvent = async (
   data: EventSchema
 ) => {
   try {
-    await prisma.event.create({
-      data: {
-        title: data.title,
-        description: data.description,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        classId: data.classId || null,
-      },
-    });
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    if (!schoolFilter.schoolId) {
+      return { success: false, error: true };
+    }
+
+    let classIdsToCreate: (number | null)[] = [];
+
+    if (data.allClasses) {
+      // If "All Classes" is selected, get all class IDs for this school
+      const allClasses = await prisma.class.findMany({
+        where: schoolFilter,
+        select: { id: true },
+      });
+      classIdsToCreate = allClasses.map(cls => cls.id);
+      
+      // Also create one event with no class (school-wide)
+      classIdsToCreate.push(null);
+    } else if (data.classIds && data.classIds.length > 0) {
+      // If specific classes are selected
+      classIdsToCreate = data.classIds;
+    } else {
+      // If no classes selected, create a school-wide event
+      classIdsToCreate = [null];
+    }
+
+    // Create multiple event records using transaction
+    await prisma.$transaction(
+      classIdsToCreate.map(classId =>
+        prisma.event.create({
+          data: {
+            title: data.title,
+            description: data.description,
+            startTime: data.startTime,
+            endTime: data.endTime,
+            classId: classId,
+            schoolId: schoolFilter.schoolId,
+          },
+        })
+      )
+    );
 
     // revalidatePath("/list/events");
     return { success: true, error: false };
@@ -1489,6 +1521,8 @@ export const updateEvent = async (
   data: EventSchema
 ) => {
   try {
+    // For now, just update the single event record
+    // Note: Updating multi-class events would require more complex logic
     await prisma.event.update({
       where: {
         id: data.id,
@@ -1498,7 +1532,6 @@ export const updateEvent = async (
         description: data.description,
         startTime: data.startTime,
         endTime: data.endTime,
-        classId: data.classId || null,
       },
     });
 
@@ -1512,13 +1545,14 @@ export const updateEvent = async (
 
 export async function createAnnouncement(prevState: any, formData: AnnouncementSchema) {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    if (!schoolFilter.schoolId) {
+      return { success: false, error: true };
+    }
+
     // Ensure description is present in the payload
     const description = formData.description;
-
-    // Prepare the class connection only if classId exists
-    const classConnect = formData.classId
-      ? { class: { connect: { id: parseInt(formData.classId) } } }
-      : {};
 
     const result = await prisma.announcement.create({
       data: {
@@ -1526,12 +1560,9 @@ export async function createAnnouncement(prevState: any, formData: AnnouncementS
         description: description, // Add the required description field
         date: new Date(formData.date),
         priority: formData.priority as Priority,
-        teacher: {
-          connect: {
-            id: formData.teacherId
-          }
-        },
-        ...classConnect
+        teacherId: formData.teacherId,
+        classId: formData.classId ? parseInt(formData.classId) : null,
+        schoolId: schoolFilter.schoolId,
       },
     });
 

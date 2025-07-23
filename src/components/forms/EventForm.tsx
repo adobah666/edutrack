@@ -6,7 +6,7 @@ import InputField from "../InputField";
 import { eventSchema, EventSchema } from "@/lib/formValidationSchemas";
 import { createEvent, updateEvent } from "@/lib/actions";
 import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
@@ -23,6 +23,9 @@ const EventForm = ({
     classes: { id: number; name: string }[];
   };
 }) => {
+  const [selectedClasses, setSelectedClasses] = useState<number[]>([]);
+  const [allClassesSelected, setAllClassesSelected] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -34,7 +37,6 @@ const EventForm = ({
           ...data,
           startTime: data.startTime ? new Date(data.startTime) : undefined,
           endTime: data.endTime ? new Date(data.endTime) : undefined,
-          classId: data.classId ? Number(data.classId) : undefined,
         }
       : undefined,
   });
@@ -52,7 +54,8 @@ const EventForm = ({
       ...data,
       startTime: new Date(data.startTime),
       endTime: new Date(data.endTime),
-      classId: data.classId ? Number(data.classId) : undefined, // Fix: use undefined instead of null
+      classIds: selectedClasses,
+      allClasses: allClassesSelected,
     };
     console.log(formData);
     formAction(formData);
@@ -111,25 +114,73 @@ const EventForm = ({
           )}
         </div>
 
-        <div className="flex flex-col gap-2 w-full md:w-1/3">
-          <label className="text-xs text-gray-500">Class (Optional)</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("classId")}
-            defaultValue={data?.classId || ""}
-          >
-            <option value="">Select Class</option>
-            {classes?.map((classItem) => (
-              <option value={classItem.id} key={classItem.id}>
-                {classItem.name}
-              </option>
-            ))}
-          </select>
-          {errors.classId?.message && (
-            <p className="text-xs text-red-400">
-              {errors.classId.message.toString()}
-            </p>
+        <div className="flex flex-col gap-2 w-full">
+          <label className="text-xs text-gray-500">Target Classes</label>
+          
+          {/* All Classes Option */}
+          <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
+            <input
+              type="checkbox"
+              id="allClasses"
+              checked={allClassesSelected}
+              onChange={(e) => {
+                setAllClassesSelected(e.target.checked);
+                if (e.target.checked) {
+                  setSelectedClasses([]);
+                }
+              }}
+              className="w-4 h-4 text-blue-600"
+            />
+            <label htmlFor="allClasses" className="text-sm font-medium text-blue-800">
+              📢 All Classes (School-wide Event)
+            </label>
+          </div>
+
+          {/* Individual Class Selection */}
+          {!allClassesSelected && (
+            <div className="border border-gray-300 rounded-md p-3 max-h-40 overflow-y-auto">
+              <p className="text-xs text-gray-500 mb-2">Select specific classes:</p>
+              {classes?.length > 0 ? (
+                <div className="grid grid-cols-1 gap-2">
+                  {classes.map((classItem) => (
+                    <div key={classItem.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`class-${classItem.id}`}
+                        checked={selectedClasses.includes(classItem.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedClasses([...selectedClasses, classItem.id]);
+                          } else {
+                            setSelectedClasses(selectedClasses.filter(id => id !== classItem.id));
+                          }
+                        }}
+                        className="w-4 h-4 text-blue-600"
+                      />
+                      <label htmlFor={`class-${classItem.id}`} className="text-sm">
+                        {classItem.name}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No classes available</p>
+              )}
+            </div>
           )}
+
+          {/* Selection Summary */}
+          <div className="text-xs text-gray-600">
+            {allClassesSelected ? (
+              <span className="text-blue-600 font-medium">✓ Event will be visible to all classes</span>
+            ) : selectedClasses.length > 0 ? (
+              <span className="text-green-600 font-medium">
+                ✓ Selected {selectedClasses.length} class{selectedClasses.length !== 1 ? 'es' : ''}
+              </span>
+            ) : (
+              <span className="text-orange-600">⚠ No classes selected - event will be school-wide</span>
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/3">

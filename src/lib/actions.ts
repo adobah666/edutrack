@@ -1686,7 +1686,11 @@ export const deleteEvent = async (
 
 export async function getClasses() {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    
     const classes = await prisma.class.findMany({
+      where: schoolFilter, // Add school filtering
       include: {
         supervisor: true,
       },
@@ -1782,7 +1786,11 @@ export async function fetchExams() {
  */
 export async function getTeachers() {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+    
     const teachers = await prisma.teacher.findMany({
+      where: schoolFilter, // Add school filtering
       orderBy: [
         { name: "asc" },
         { surname: "asc" },

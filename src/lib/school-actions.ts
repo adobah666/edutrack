@@ -198,7 +198,7 @@ export const createAdmin = async (
     }
 
     // Check if username exists
-    const existingUsersByUsername = await clerkClient.users.getUserList({
+    const existingUsersByUsername = await clerkClient().users.getUserList({
       username: [data.username],
     });
     if (existingUsersByUsername.totalCount > 0) {
@@ -211,7 +211,7 @@ export const createAdmin = async (
 
     // Check if email exists (if provided)
     if (data.email) {
-      const existingUsersByEmail = await clerkClient.users.getUserList({
+      const existingUsersByEmail = await clerkClient().users.getUserList({
         emailAddress: [data.email],
       });
       if (existingUsersByEmail.totalCount > 0) {
@@ -224,7 +224,7 @@ export const createAdmin = async (
     }
 
     // Create user in Clerk
-    createdClerkUser = await clerkClient.users.createUser({
+    createdClerkUser = await clerkClient().users.createUser({
       username: data.username,
       password: data.password,
       firstName: data.name,
@@ -252,21 +252,41 @@ export const createAdmin = async (
       error: false,
       message: "Admin created successfully",
     };
-  } catch (err) {
+  } catch (err: any) {
     // If anything fails and we created a Clerk user, clean it up
     if (createdClerkUser) {
       try {
-        await clerkClient.users.deleteUser(createdClerkUser.id);
+        await clerkClient().users.deleteUser(createdClerkUser.id);
       } catch (cleanupError) {
         console.error("Error cleaning up Clerk user:", cleanupError);
       }
     }
 
     console.error("Error in createAdmin:", err);
-    const errorMessage =
-      err instanceof Error
-        ? err.message
-        : "An error occurred while creating the admin";
+    
+    // Handle Clerk validation errors specifically
+    if (err?.clerkError && err?.errors && Array.isArray(err.errors)) {
+      const clerkErrors = err.errors.map((error: any) => error.message || error.longMessage).join(", ");
+      return { 
+        success: false, 
+        error: true, 
+        message: `Validation Error: ${clerkErrors}` 
+      };
+    }
+    
+    // Handle other Clerk errors
+    if (err?.clerkError) {
+      return { 
+        success: false, 
+        error: true, 
+        message: err.message || "Authentication service error occurred" 
+      };
+    }
+    
+    // Handle general errors
+    const errorMessage = err instanceof Error 
+      ? err.message 
+      : "An error occurred while creating the admin";
     return { success: false, error: true, message: errorMessage };
   }
 };
@@ -312,7 +332,7 @@ export const updateAdmin = async (
       clerkUpdateData.password = data.password;
     }
 
-    await clerkClient.users.updateUser(data.id, clerkUpdateData);
+    await clerkClient().users.updateUser(data.id, clerkUpdateData);
 
     // Update admin in database
     await prisma.admin.update({
@@ -374,7 +394,7 @@ export const deleteAdmin = async (
     });
 
     // Delete Clerk user
-    await clerkClient.users.deleteUser(id);
+    await clerkClient().users.deleteUser(id);
 
     revalidatePath("/list/admins");
     return { success: true, error: false };

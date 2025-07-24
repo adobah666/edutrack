@@ -3,11 +3,11 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import InputField from "../InputField";
+import FormModal from "../FormModal";
 import { z } from "zod";
-import { useFormState } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 // Define the schema
 const classFeeSchema = z.object({
@@ -31,6 +31,8 @@ const ClassFeeForm = ({
   setOpen: (open: boolean) => void;
   relatedData?: any;
 }) => {
+  const [feeTypes, setFeeTypes] = useState(relatedData?.feeTypes || []);
+
   const {
     register,
     handleSubmit,
@@ -39,53 +41,51 @@ const ClassFeeForm = ({
     resolver: zodResolver(classFeeSchema),
   });
 
-  const [state, formAction] = useFormState(
-    async (prevState: any, formData: FormData) => {
-      try {
-        const url = type === "create" ? "/api/class-fees" : `/api/class-fees/${data?.id}`;
-        const method = type === "create" ? "POST" : "PUT";
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-        const response = await fetch(url, {
-          method,
-          body: formData,
-        });
+  const onSubmit = handleSubmit(async (formData) => {
+    setIsSubmitting(true);
+    try {
+      const url = type === "create" ? "/api/class-fees" : `/api/class-fees/${data?.id}`;
+      const method = type === "create" ? "POST" : "PUT";
 
-        if (!response.ok) {
-          const error = await response.json();
-          return { ...prevState, error: true, message: error.message };
+      const submitData = new FormData();
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined) {
+          submitData.append(key, value.toString());
         }
+      });
 
-        return { ...prevState, success: true };
-      } catch (error) {
-        return { ...prevState, error: true, message: "An error occurred" };
-      }
-    },
-    { success: false, error: false, message: "" }
-  );
+      const response = await fetch(url, {
+        method,
+        body: submitData,
+      });
 
-  const onSubmit = handleSubmit((data) => {
-    const formData = new FormData();
-    Object.entries(data).forEach(([key, value]) => {
-      if (value !== undefined) {
-        formData.append(key, value.toString());
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message);
       }
-    });
-    formAction(formData);
+
+      toast.success(`Class fee ${type === "create" ? "created" : "updated"} successfully!`);
+      setOpen(false);
+      router.refresh();
+    } catch (error: any) {
+      toast.error(error.message || "Something went wrong!");
+    } finally {
+      setIsSubmitting(false);
+    }
   });
 
   const router = useRouter();
 
+  // Initialize fee types from relatedData and keep them updated
   useEffect(() => {
-    if (state.success) {
-      toast.success(`Class fee ${type === "create" ? "created" : "updated"} successfully!`);
-      setOpen(false);
-      router.refresh();
-    } else if (state.error) {
-      toast.error(state.message || "Something went wrong!");
+    if (relatedData?.feeTypes) {
+      setFeeTypes(relatedData.feeTypes);
     }
-  }, [state, router, type, setOpen]);
+  }, [relatedData?.feeTypes]);
 
-  const { classes, feeTypes } = relatedData || { classes: [], feeTypes: [] };
+  const { classes } = relatedData || { classes: [] };
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
@@ -116,7 +116,27 @@ const ClassFeeForm = ({
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Fee Type</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs text-gray-500">Fee Type</label>
+            <button
+              type="button"
+              onClick={() => {
+                // Find and click the existing "Add Fee Type" button
+                const addFeeTypeButton = document.querySelector('button span')?.textContent === 'Add Fee Type' 
+                  ? document.querySelector('button span')?.parentElement as HTMLButtonElement
+                  : Array.from(document.querySelectorAll('button')).find(btn => 
+                      btn.textContent?.includes('Add Fee Type')
+                    ) as HTMLButtonElement;
+                
+                if (addFeeTypeButton) {
+                  addFeeTypeButton.click();
+                }
+              }}
+              className="text-xs text-blue-600 hover:text-blue-800 font-medium bg-transparent border-none p-0 cursor-pointer"
+            >
+              + New Fee Type
+            </button>
+          </div>
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("feeTypeId")}
@@ -180,8 +200,11 @@ const ClassFeeForm = ({
         )}
       </div>
 
-      <button className="bg-blue-400 text-white p-2 rounded-md">
-        {type === "create" ? "Create" : "Update"}
+      <button 
+        className="bg-blue-400 text-white p-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={isSubmitting}
+      >
+        {isSubmitting ? "Processing..." : (type === "create" ? "Create" : "Update")}
       </button>
     </form>
   );

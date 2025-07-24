@@ -1,9 +1,11 @@
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const Announcements = async () => {
   const { userId, sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
+  const schoolFilter = await getSchoolFilter();
 
   const roleConditions = {
     teacher: { lessons: { some: { teacherId: userId! } } },
@@ -11,17 +13,25 @@ const Announcements = async () => {
     parent: { students: { some: { parentId: userId! } } },
   };
 
+  const whereClause: any = {};
+  
+  // Add school filter if schoolId exists
+  if (schoolFilter.schoolId) {
+    whereClause.schoolId = schoolFilter.schoolId;
+  }
+  
+  // Add role-based filtering
+  if (role !== "admin") {
+    whereClause.OR = [
+      { classId: null },
+      { class: roleConditions[role as keyof typeof roleConditions] || {} },
+    ];
+  }
+
   const data = await prisma.announcement.findMany({
     take: 3,
     orderBy: { date: "desc" },
-    where: {
-      ...(role !== "admin" && {
-        OR: [
-          { classId: null },
-          { class: roleConditions[role as keyof typeof roleConditions] || {} },
-        ],
-      }),
-    },
+    where: whereClause,
   });
 
   return (

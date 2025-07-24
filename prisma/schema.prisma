@@ -35,6 +35,13 @@ model School {
   classFees   ClassFee[]
   studentFees StudentFee[]
   feeReminders FeeReminder[]
+  staffSalaries StaffSalary[]
+  salaryPayments SalaryPayment[]
+  staffBonuses StaffBonus[]
+  accounts Account[]
+  transactions Transaction[]
+  budgets Budget[]
+  budgetItems BudgetItem[]
 }
 
 model Admin {
@@ -98,6 +105,7 @@ model Teacher {
   lessons       Lesson[]
   school        School         @relation(fields: [schoolId], references: [id])
   subjects      Subject[]      @relation("SubjectToTeacher")
+  salary        StaffSalary?
 }
 
 model Parent {
@@ -310,6 +318,61 @@ model FeeReminder {
   studentFee   StudentFee   @relation(fields: [studentFeeId], references: [id])
 }
 
+model StaffSalary {
+  id           Int             @id @default(autoincrement())
+  teacherId    String          @unique
+  baseSalary   Float
+  currency     String          @default("GHS")
+  payFrequency PayFrequency    @default(MONTHLY)
+  startDate    DateTime        @default(now())
+  endDate      DateTime?
+  isActive     Boolean         @default(true)
+  schoolId     String
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  
+  teacher      Teacher         @relation(fields: [teacherId], references: [id])
+  school       School          @relation(fields: [schoolId], references: [id])
+  payments     SalaryPayment[]
+  bonuses      StaffBonus[]
+}
+
+model SalaryPayment {
+  id            Int           @id @default(autoincrement())
+  salaryId      Int
+  amount        Float
+  payPeriodStart DateTime
+  payPeriodEnd  DateTime
+  payDate       DateTime?
+  dueDate       DateTime
+  status        PaymentStatus @default(PENDING)
+  notes         String?
+  schoolId      String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  salary        StaffSalary   @relation(fields: [salaryId], references: [id])
+  school        School        @relation(fields: [schoolId], references: [id])
+}
+
+model StaffBonus {
+  id          Int           @id @default(autoincrement())
+  salaryId    Int
+  amount      Float
+  reason      String
+  bonusType   BonusType     @default(PERFORMANCE)
+  payDate     DateTime?
+  dueDate     DateTime
+  status      PaymentStatus @default(PENDING)
+  notes       String?
+  schoolId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  
+  salary      StaffSalary   @relation(fields: [salaryId], references: [id])
+  school      School        @relation(fields: [schoolId], references: [id])
+}
+
 enum UserSex {
   MALE
   FEMALE
@@ -346,4 +409,146 @@ enum Term {
   SECOND
   THIRD
   FINAL
+}
+
+enum PayFrequency {
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+}
+
+enum BonusType {
+  PERFORMANCE
+  HOLIDAY
+  ANNUAL
+  PROJECT
+  OVERTIME
+  OTHER
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+enum AccountSubType {
+  // Assets
+  CURRENT_ASSET
+  FIXED_ASSET
+  
+  // Liabilities
+  CURRENT_LIABILITY
+  LONG_TERM_LIABILITY
+  
+  // Equity
+  OWNERS_EQUITY
+  RETAINED_EARNINGS
+  
+  // Income
+  OPERATING_INCOME
+  NON_OPERATING_INCOME
+  
+  // Expenses
+  OPERATING_EXPENSE
+  NON_OPERATING_EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHEQUE
+  MOBILE_MONEY
+  CARD
+  OTHER
+}
+// ACCOUNTING MODELS
+
+model Account {
+  id          Int            @id @default(autoincrement())
+  code        String         // Account code (e.g., "1001", "2001")
+  name        String         // Account name (e.g., "Cash", "Accounts Payable")
+  type        AccountType    // ASSET, LIABILITY, EQUITY, INCOME, EXPENSE
+  subType     AccountSubType // More specific categorization
+  description String?
+  isActive    Boolean        @default(true)
+  schoolId    String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  school       School        @relation(fields: [schoolId], references: [id])
+  transactions Transaction[]
+  budgetItems  BudgetItem[]
+  
+  @@unique([code, schoolId])
+  @@unique([name, schoolId])
+}
+
+model Transaction {
+  id            Int           @id @default(autoincrement())
+  reference     String        // Transaction reference number
+  description   String
+  amount        Float
+  type          TransactionType // INCOME, EXPENSE, TRANSFER
+  paymentMethod PaymentMethod @default(CASH)
+  accountId     Int           // Main account affected
+  date          DateTime      @default(now())
+  receiptNumber String?       // Receipt/invoice number
+  notes         String?
+  attachments   String[]      // File paths for receipts/invoices
+  schoolId      String
+  createdBy     String?       // Admin who created the transaction
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  
+  account School @relation(fields: [schoolId], references: [id])
+  mainAccount Account @relation(fields: [accountId], references: [id])
+  
+  @@unique([reference, schoolId])
+}
+
+model Budget {
+  id          Int          @id @default(autoincrement())
+  name        String       // e.g., "2025 Annual Budget", "Q1 2025 Budget"
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  totalAmount Float        @default(0)
+  isActive    Boolean      @default(true)
+  schoolId    String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  school      School       @relation(fields: [schoolId], references: [id])
+  budgetItems BudgetItem[]
+  
+  @@unique([name, schoolId])
+}
+
+model BudgetItem {
+  id            Int     @id @default(autoincrement())
+  budgetId      Int
+  accountId     Int
+  budgetedAmount Float  // Planned amount
+  actualAmount   Float  @default(0) // Actual spent/received
+  description   String?
+  schoolId      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  budget   Budget  @relation(fields: [budgetId], references: [id])
+  account  Account @relation(fields: [accountId], references: [id])
+  school   School  @relation(fields: [schoolId], references: [id])
+  
+  @@unique([budgetId, accountId])
 }

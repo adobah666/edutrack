@@ -5,20 +5,68 @@ import * as SignIn from "@clerk/elements/sign-in";
 import { useUser } from "@clerk/nextjs";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const LoginPage = () => {
-  const { user } = useUser();
+  const { user, isLoaded } = useUser();
   const router = useRouter();
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
+    if (!isLoaded) return; // Wait for user data to load
+
     const role = user?.publicMetadata.role;
 
-    if (role) {
+    if (user && role && !isRedirecting) {
+      setIsRedirecting(true);
       router.push(`/${role}`);
       console.log("Redirecting to", role);
     }
-  }, [user, router]);
+  }, [user, isLoaded, router, isRedirecting]);
+
+  // Force refresh on logout to ensure clean state
+  useEffect(() => {
+    if (isLoaded && !user) {
+      // Check if we just logged out (there was a user before)
+      const wasLoggedIn = sessionStorage.getItem('wasLoggedIn');
+      if (wasLoggedIn === 'true') {
+        sessionStorage.removeItem('wasLoggedIn');
+        window.location.reload();
+        return;
+      }
+    } else if (isLoaded && user) {
+      // Mark that user is logged in
+      sessionStorage.setItem('wasLoggedIn', 'true');
+    }
+  }, [isLoaded, user]);
+
+  // Show loading state while checking authentication
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="brightness-0 invert" />
+          </div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state while redirecting
+  if (isRedirecting) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <Image src="/logo.png" alt="Logo" width={32} height={32} className="brightness-0 invert" />
+          </div>
+          <p className="text-gray-600">Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
 
   const features = [
     {

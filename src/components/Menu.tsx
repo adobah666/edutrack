@@ -35,6 +35,12 @@ const menuItems = [
 				visible: ["admin", "teacher", "student", "parent"],
 			},
 			{
+				icon: "/finance.png",
+				label: "My Payroll",
+				href: "/teacher/payroll",
+				visible: ["teacher"],
+			},
+			{
 				icon: "/teacher.png",
 				label: "Teachers",
 				href: "/list/teachers",
@@ -99,6 +105,18 @@ const menuItems = [
 				label: "Fees",
 				href: "/list/fees",
 				visible: ["admin", "parent"],
+			},
+			{
+				icon: "/finance.png",
+				label: "Payroll",
+				href: "/list/payroll",
+				visible: ["admin"],
+			},
+			{
+				icon: "/result.png",
+				label: "Accounting",
+				href: "/accounting",
+				visible: ["admin"],
 			},
 			{
 			  icon: "/attendance.png",

@@ -6,10 +6,17 @@ import { getSchoolFilter } from "@/lib/school-context";
 const CountChartContainer = async () => {
   const schoolFilter = await getSchoolFilter();
   
+  const whereClause: any = {};
+  
+  // Add school filter if schoolId exists
+  if (schoolFilter.schoolId) {
+    whereClause.schoolId = schoolFilter.schoolId;
+  }
+
   const data = await prisma.student.groupBy({
     by: ["sex"],
     _count: true,
-    where: schoolFilter,
+    where: whereClause,
   });
 
   const boys = data.find((d) => d.sex === "MALE")?._count || 0;

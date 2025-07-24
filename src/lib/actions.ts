@@ -1892,3 +1892,563 @@ export const updateParent = async (
     };
   }
 };
+
+// STAFF SALARY ACTIONS
+
+export const createStaffSalary = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const schoolId = userContext.schoolId;
+
+    await prisma.staffSalary.create({
+      data: {
+        teacherId: data.teacherId,
+        baseSalary: parseFloat(data.baseSalary),
+        currency: data.currency,
+        payFrequency: data.payFrequency,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : null,
+        isActive: data.isActive !== false,
+        schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateStaffSalary = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.staffSalary.update({
+      where: {
+        id: data.id,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        baseSalary: parseFloat(data.baseSalary),
+        currency: data.currency,
+        payFrequency: data.payFrequency,
+        startDate: new Date(data.startDate),
+        endDate: data.endDate ? new Date(data.endDate) : null,
+        isActive: data.isActive !== false,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteStaffSalary = async (
+  currentState: CurrentState,
+  data: FormData
+) => {
+  const id = data.get("id") as string;
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const salaryId = parseInt(id);
+
+    // Check if there are related records
+    const relatedPayments = await prisma.salaryPayment.count({
+      where: { salaryId: salaryId }
+    });
+
+    const relatedBonuses = await prisma.staffBonus.count({
+      where: { salaryId: salaryId }
+    });
+
+    if (relatedPayments > 0 || relatedBonuses > 0) {
+      return { 
+        success: false, 
+        error: true, 
+        message: `Cannot delete salary record. It has ${relatedPayments} payment(s) and ${relatedBonuses} bonus(es) associated with it. Please delete those first.` 
+      };
+    }
+
+    await prisma.staffSalary.delete({
+      where: {
+        id: salaryId,
+        schoolId: userContext.schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true, message: "Failed to delete salary record" };
+  }
+};
+
+// SALARY PAYMENT ACTIONS
+
+export const createSalaryPayment = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const schoolId = userContext.schoolId;
+
+    await prisma.salaryPayment.create({
+      data: {
+        salaryId: parseInt(data.salaryId),
+        amount: parseFloat(data.amount),
+        payPeriodStart: new Date(data.payPeriodStart),
+        payPeriodEnd: new Date(data.payPeriodEnd),
+        dueDate: new Date(data.dueDate),
+        payDate: data.payDate ? new Date(data.payDate) : null,
+        status: data.status,
+        notes: data.notes || null,
+        schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateSalaryPayment = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.salaryPayment.update({
+      where: {
+        id: data.id,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        amount: parseFloat(data.amount),
+        payPeriodStart: new Date(data.payPeriodStart),
+        payPeriodEnd: new Date(data.payPeriodEnd),
+        dueDate: new Date(data.dueDate),
+        payDate: data.payDate ? new Date(data.payDate) : null,
+        status: data.status,
+        notes: data.notes || null,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteSalaryPayment = async (
+  currentState: CurrentState,
+  data: FormData
+) => {
+  const id = data.get("id") as string;
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.salaryPayment.delete({
+      where: {
+        id: parseInt(id),
+        schoolId: userContext.schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+// STAFF BONUS ACTIONS
+
+export const createStaffBonus = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const schoolId = userContext.schoolId;
+
+    await prisma.staffBonus.create({
+      data: {
+        salaryId: parseInt(data.salaryId),
+        amount: parseFloat(data.amount),
+        reason: data.reason,
+        bonusType: data.bonusType,
+        dueDate: new Date(data.dueDate),
+        payDate: data.payDate ? new Date(data.payDate) : null,
+        status: data.status,
+        notes: data.notes || null,
+        schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateStaffBonus = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.staffBonus.update({
+      where: {
+        id: data.id,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        amount: parseFloat(data.amount),
+        reason: data.reason,
+        bonusType: data.bonusType,
+        dueDate: new Date(data.dueDate),
+        payDate: data.payDate ? new Date(data.payDate) : null,
+        status: data.status,
+        notes: data.notes || null,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteStaffBonus = async (
+  currentState: CurrentState,
+  data: FormData
+) => {
+  const id = data.get("id") as string;
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.staffBonus.delete({
+      where: {
+        id: parseInt(id),
+        schoolId: userContext.schoolId,
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+// MARK SALARY PAYMENT AS PAID
+
+export const markSalaryPaymentAsPaid = async (
+  currentState: CurrentState,
+  paymentId: number
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.salaryPayment.update({
+      where: {
+        id: paymentId,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        status: "PAID",
+        payDate: new Date(),
+      },
+    });
+
+    revalidatePath("/list/payroll");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true, message: "Failed to mark payment as paid" };
+  }
+};
+
+// ACCOUNTING ACTIONS
+
+// ACCOUNT ACTIONS
+export const createAccount = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const schoolId = userContext.schoolId;
+
+    await prisma.account.create({
+      data: {
+        code: data.code,
+        name: data.name,
+        type: data.type,
+        subType: data.subType,
+        description: data.description || null,
+        isActive: data.isActive !== false,
+        schoolId,
+      },
+    });
+
+    revalidatePath("/accounting/accounts");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateAccount = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.account.update({
+      where: {
+        id: data.id,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        code: data.code,
+        name: data.name,
+        type: data.type,
+        subType: data.subType,
+        description: data.description || null,
+        isActive: data.isActive !== false,
+      },
+    });
+
+    revalidatePath("/accounting/accounts");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteAccount = async (
+  currentState: CurrentState,
+  data: FormData
+) => {
+  const id = data.get("id") as string;
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    // Check if account has transactions
+    const transactionCount = await prisma.transaction.count({
+      where: { accountId: parseInt(id) }
+    });
+
+    if (transactionCount > 0) {
+      return { 
+        success: false, 
+        error: true, 
+        message: `Cannot delete account. It has ${transactionCount} transaction(s) associated with it.` 
+      };
+    }
+
+    await prisma.account.delete({
+      where: {
+        id: parseInt(id),
+        schoolId: userContext.schoolId,
+      },
+    });
+
+    revalidatePath("/accounting/accounts");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+// TRANSACTION ACTIONS
+export const createTransaction = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    const schoolId = userContext.schoolId;
+
+    await prisma.transaction.create({
+      data: {
+        reference: data.reference,
+        description: data.description,
+        amount: parseFloat(data.amount),
+        type: data.type,
+        paymentMethod: data.paymentMethod,
+        accountId: parseInt(data.accountId),
+        date: new Date(data.date),
+        receiptNumber: data.receiptNumber || null,
+        notes: data.notes || null,
+        schoolId,
+      },
+    });
+
+    revalidatePath("/accounting/transactions");
+    revalidatePath("/accounting");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const updateTransaction = async (
+  currentState: CurrentState,
+  data: any
+) => {
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.transaction.update({
+      where: {
+        id: data.id,
+        schoolId: userContext.schoolId,
+      },
+      data: {
+        reference: data.reference,
+        description: data.description,
+        amount: parseFloat(data.amount),
+        type: data.type,
+        paymentMethod: data.paymentMethod,
+        accountId: parseInt(data.accountId),
+        date: new Date(data.date),
+        receiptNumber: data.receiptNumber || null,
+        notes: data.notes || null,
+      },
+    });
+
+    revalidatePath("/accounting/transactions");
+    revalidatePath("/accounting");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};
+
+export const deleteTransaction = async (
+  currentState: CurrentState,
+  data: FormData
+) => {
+  const id = data.get("id") as string;
+  try {
+    const userContext = await getCurrentUserSchool();
+
+    if (!userContext.schoolId) {
+      return { success: false, error: true, message: "School context not found" };
+    }
+
+    await prisma.transaction.delete({
+      where: {
+        id: parseInt(id),
+        schoolId: userContext.schoolId,
+      },
+    });
+
+    revalidatePath("/accounting/transactions");
+    revalidatePath("/accounting");
+    return { success: true, error: false };
+  } catch (err) {
+    console.log(err);
+    return { success: false, error: true };
+  }
+};

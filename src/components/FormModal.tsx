@@ -12,6 +12,11 @@ import {
   deleteAttendance,
   deleteEvent,
   deleteAnnouncement,
+  deleteStaffSalary,
+  deleteSalaryPayment,
+  deleteStaffBonus,
+  deleteAccount,
+  deleteTransaction,
 } from "@/lib/actions";
 import {
   deleteSchool,
@@ -40,6 +45,11 @@ const deleteActionMap = {
   announcement: deleteAnnouncement,
   school: deleteSchool,
   admin: deleteAdmin,
+  staffSalary: deleteStaffSalary,
+  salaryPayment: deleteSalaryPayment,
+  staffBonus: deleteStaffBonus,
+  account: deleteAccount,
+  transaction: deleteTransaction,
   studentFee: async (prevState: any, formData: FormData) => {
     try {
       const id = formData.get("id");
@@ -261,6 +271,21 @@ const SchoolForm = dynamic(() => import("./forms/SchoolForm"), {
 const AdminForm = dynamic(() => import("./forms/AdminForm"), {
   loading: () => <h1>Loading...</h1>,
 });
+const StaffSalaryForm = dynamic(() => import("./forms/StaffSalaryForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const SalaryPaymentForm = dynamic(() => import("./forms/SalaryPaymentForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const StaffBonusForm = dynamic(() => import("./forms/StaffBonusForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const AccountForm = dynamic(() => import("./forms/AccountForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const TransactionForm = dynamic(() => import("./forms/TransactionForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
 
 const forms: {
   [key: string]: (
@@ -400,6 +425,46 @@ const forms: {
   ),
   admin: (setOpen, type, data, relatedData) => (
     <AdminForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  staffSalary: (setOpen, type, data, relatedData) => (
+    <StaffSalaryForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  salaryPayment: (setOpen, type, data, relatedData) => (
+    <SalaryPaymentForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  staffBonus: (setOpen, type, data, relatedData) => (
+    <StaffBonusForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  account: (setOpen, type, data, relatedData) => (
+    <AccountForm
+      type={type}
+      data={data}
+      setOpen={setOpen}
+      relatedData={relatedData}
+    />
+  ),
+  transaction: (setOpen, type, data, relatedData) => (
+    <TransactionForm
       type={type}
       data={data}
       setOpen={setOpen}

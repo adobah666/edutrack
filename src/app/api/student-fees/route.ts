@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { getSchoolFilter } from "@/lib/school-context";
+import { recordStudentFeeTransaction } from "@/lib/accounting-integration";
 
 export async function POST(req: Request) {
   try {
@@ -97,6 +98,14 @@ export async function POST(req: Request) {
     });
 
     const totalPaidAmount = allPayments.reduce((sum, p) => sum + p.amount, 0);
+
+    // Record the payment in the accounting system
+    await recordStudentFeeTransaction(
+      studentFee.id,
+      amount,
+      `${studentFee.student.name} ${studentFee.student.surname}`,
+      studentFee.classFee.feeType.name
+    );
 
     return NextResponse.json({
       ...studentFee,

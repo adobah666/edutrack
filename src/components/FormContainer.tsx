@@ -21,7 +21,12 @@ export type FormContainerProps = {
     | "classFee"
     | "studentFee"
     | "admin"
-    | "school";
+    | "school"
+    | "staffSalary"
+    | "salaryPayment"
+    | "staffBonus"
+    | "account"
+    | "transaction";
   type: "create" | "update" | "delete";
   data?: any;
   id?: number | string;
@@ -234,6 +239,43 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           classes: attendanceClasses,
           students: allStudents 
         };
+        break;
+
+      case "staffSalary":
+        // Fetch teachers without salary records for create, or all teachers for update
+        const availableTeachers = await prisma.teacher.findMany({
+          where: {
+            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
+            ...(type === "create" ? { salary: null } : {})
+          },
+          select: { id: true, name: true, surname: true },
+          orderBy: [{ name: "asc" }, { surname: "asc" }]
+        });
+        relatedData = { teachers: availableTeachers };
+        break;
+
+      case "salaryPayment":
+      case "staffBonus":
+        // These forms get salaryId from data prop, no additional related data needed
+        relatedData = {};
+        break;
+
+      case "account":
+        // No additional related data needed for accounts
+        relatedData = {};
+        break;
+
+      case "transaction":
+        // Fetch accounts for transaction form
+        const accounts = await prisma.account.findMany({
+          where: {
+            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
+            isActive: true,
+          },
+          select: { id: true, code: true, name: true, type: true },
+          orderBy: { code: "asc" },
+        });
+        relatedData = { accounts };
         break;
 
       default:

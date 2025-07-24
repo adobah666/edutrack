@@ -1,8 +1,10 @@
 import Image from "next/image";
 import AttendanceChart from "./AttendanceChart";
 import prisma from "@/lib/prisma";
+import { getSchoolFilter } from "@/lib/school-context";
 
 const AttendanceChartContainer = async () => {
+  const schoolFilter = await getSchoolFilter();
   const today = new Date();
   const dayOfWeek = today.getDay();
   const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
@@ -16,6 +18,7 @@ const AttendanceChartContainer = async () => {
       date: {
         gte: lastMonday,
       },
+      student: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : undefined,
     },
     select: {
       date: true,

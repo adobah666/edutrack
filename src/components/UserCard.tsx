@@ -1,4 +1,5 @@
 import prisma from "@/lib/prisma";
+import { getSchoolFilter } from "@/lib/school-context";
 import Image from "next/image";
 
 const UserCard = async ({
@@ -6,6 +7,8 @@ const UserCard = async ({
 }: {
   type: "admin" | "teacher" | "student" | "parent";
 }) => {
+  const schoolFilter = await getSchoolFilter();
+  
   const modelMap: Record<typeof type, any> = {
     admin: prisma.admin,
     teacher: prisma.teacher,
@@ -13,7 +16,9 @@ const UserCard = async ({
     parent: prisma.parent,
   };
 
-  const data = await modelMap[type].count();
+  const data = await modelMap[type].count({
+    where: schoolFilter
+  });
 
   return (
     <div className="rounded-2xl odd:bg-lamaPurple even:bg-lamaYellow p-4 flex-1 min-w-[130px]">

@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     const formData = await req.formData();
     const accountId = parseInt(formData.get("accountId") as string);
-    const type = formData.get("type") as string;
+    const type = formData.get("type") as "INCOME" | "EXPENSE" | "TRANSFER";
     const amount = parseFloat(formData.get("amount") as string);
     const description = formData.get("description") as string;
     const date = formData.get("date") as string;
@@ -87,9 +87,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["INCOME", "EXPENSE"].includes(type)) {
+    if (!["INCOME", "EXPENSE", "TRANSFER"].includes(type)) {
       return NextResponse.json(
-        { message: "Type must be INCOME or EXPENSE" },
+        { message: "Type must be INCOME, EXPENSE, or TRANSFER" },
         { status: 400 }
       );
     }

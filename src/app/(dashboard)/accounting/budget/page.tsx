@@ -36,11 +36,14 @@ const BudgetPage = async () => {
       orderBy: { createdAt: "desc" },
     }),
 
-    // Get all accounts for budget planning
+    // Get all accounts for budget planning (only INCOME and EXPENSE accounts)
     prisma.account.findMany({
       where: {
         ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
         isActive: true,
+        type: {
+          in: ["INCOME", "EXPENSE"]
+        },
       },
       orderBy: [{ type: "asc" }, { name: "asc" }],
     }),
@@ -78,9 +81,14 @@ const BudgetPage = async () => {
   // Calculate actual amounts for each budget (read-only, don't update DB here)
   const budgetsWithActuals = await Promise.all(
     budgets.map(async (budget) => {
+      // Filter budget items to only include INCOME and EXPENSE accounts
+      const validBudgetItems = budget.budgetItems.filter(item => 
+        item.account.type === "INCOME" || item.account.type === "EXPENSE"
+      );
+
       // Calculate budget items with actual amounts
       const budgetItemsWithActuals = await Promise.all(
-        budget.budgetItems.map(async (item) => {
+        validBudgetItems.map(async (item) => {
           // Get transactions for this specific account within the budget period
           const accountTransactions = await prisma.transaction.findMany({
             where: {
@@ -105,6 +113,10 @@ const BudgetPage = async () => {
         
           return {
             ...item,
+            account: {
+              ...item.account,
+              type: item.account.type as "INCOME" | "EXPENSE"
+            },
             actualAmount,
             variance: actualAmount - item.budgetedAmount,
             percentageUsed: item.budgetedAmount > 0 ? (actualAmount / item.budgetedAmount) * 100 : 0,

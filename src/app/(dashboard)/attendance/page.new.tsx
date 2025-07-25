@@ -1,5 +1,3 @@
-"use client";
-
 import prisma from "@/lib/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { Prisma } from "@prisma/client";
@@ -9,12 +7,13 @@ import Table from "@/components/Table";
 import Pagination from "@/components/Pagination";
 import TableSearch from "@/components/TableSearch";
 import Link from "next/link";
+import { Suspense } from "react";
 
-const AttendancePage = async ({
+async function AttendancePage({
   searchParams,
 }: {
   searchParams: { [key: string]: string | undefined };
-}) => {
+}) {
   const { sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const userId = sessionClaims?.sub;

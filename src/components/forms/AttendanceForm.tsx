@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useFormState } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
@@ -73,9 +73,11 @@ const AttendanceForm = ({
   const { classes = [], students = [] } = relatedData || {};
   
   // Filter students by selected class
-  const classStudents = selectedClassId 
-    ? students.filter(student => student.classId === parseInt(selectedClassId.toString()))
-    : [];
+  const classStudents = useMemo(() => 
+    selectedClassId 
+      ? students.filter(student => student.classId === parseInt(selectedClassId.toString()))
+      : []
+  , [selectedClassId, students]);
 
   // Set up student attendance records when class changes
   useEffect(() => {

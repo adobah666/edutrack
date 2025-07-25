@@ -92,7 +92,7 @@ const IncomeStatementPage = async ({
         </Link>
         <IncomeStatementPrint 
           reportData={{
-            school: school || { name: "School Name", address: "", phone: "" },
+            school: school ? { ...school, phone: school.phone ?? "" } : { name: "School Name", address: "", phone: "" },
             incomeAccountTotals,
             expenseAccountTotals,
             totalIncome,

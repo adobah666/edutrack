@@ -6,11 +6,45 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
+interface BudgetItem {
+  id: number;
+  budgetId: number;
+  budgetedAmount: number;
+  actualAmount: number;
+  description: string | null;
+  variance: number;
+  percentageUsed: number;
+  createdAt: Date;
+  updatedAt: Date;
+  account: {
+    id: number;
+    name: string;
+    code: string;
+    type: 'INCOME' | 'EXPENSE';
+  };
+}
+
+interface Budget {
+  id: number;
+  name: string;
+  description: string | null;
+  startDate: string;
+  endDate: string;
+  totalAmount: number;
+  isActive: boolean;
+  budgetItems: BudgetItem[];
+}
+
 interface BudgetManagementProps {
-  budgets: any[];
-  accounts: any[];
-  budgetVsActual: any[];
-  activeBudget: any;
+  budgets: Budget[];
+  accounts: {
+    id: number;
+    name: string;
+    code: string;
+    type: 'INCOME' | 'EXPENSE';
+  }[];
+  budgetVsActual: BudgetItem[];
+  activeBudget: Budget | null;
   school: any;
 }
 
@@ -27,21 +61,27 @@ const BudgetManagement = ({
   const [showEditBudget, setShowEditBudget] = useState(false);
   const [showEditBudgetItem, setShowEditBudgetItem] = useState(false);
   const [showRecordTransaction, setShowRecordTransaction] = useState(false);
-  const [selectedBudget, setSelectedBudget] = useState(activeBudget || budgets[0]);
-  const [selectedBudgetItem, setSelectedBudgetItem] = useState(null);
+  const [selectedBudget, setSelectedBudget] = useState<Budget | null>(activeBudget || budgets[0]);
+  const [selectedBudgetItem, setSelectedBudgetItem] = useState<BudgetItem | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [currentBudgetData, setCurrentBudgetData] = useState([]);
+  const [currentBudgetData, setCurrentBudgetData] = useState<BudgetItem[]>([]);
   const router = useRouter();
 
   // Update current budget data when selected budget changes
   useEffect(() => {
     if (selectedBudget && selectedBudget.budgetItems) {
-      setCurrentBudgetData(selectedBudget.budgetItems.map((item: any) => ({
-        ...item,
-        actualAmount: item.actualAmount || 0,
-        variance: (item.actualAmount || 0) - item.budgetedAmount,
-        percentageUsed: item.budgetedAmount > 0 ? ((item.actualAmount || 0) / item.budgetedAmount) * 100 : 0,
-      })));
+      setCurrentBudgetData(selectedBudget.budgetItems.map((item: Omit<BudgetItem, 'variance' | 'percentageUsed'>) => {
+        const actualAmount = item.actualAmount || 0;
+        const variance = actualAmount - item.budgetedAmount;
+        const percentageUsed = item.budgetedAmount > 0 ? (actualAmount / item.budgetedAmount) * 100 : 0;
+        
+        return {
+          ...item,
+          actualAmount,
+          variance,
+          percentageUsed,
+        };
+      }));
     } else {
       setCurrentBudgetData([]);
     }
@@ -97,6 +137,11 @@ const BudgetManagement = ({
 
   // Update budget
   const updateBudget = async (formData: FormData) => {
+    if (!selectedBudget) {
+      toast.error("No budget selected");
+      return;
+    }
+    
     setIsLoading(true);
     try {
       const response = await fetch(`/api/budgets/${selectedBudget.id}`, {
@@ -190,18 +235,18 @@ const BudgetManagement = ({
   };
 
   // Calculate totals for current selected budget
-  const totalBudgeted = currentBudgetData.reduce((sum, item) => sum + item.budgetedAmount, 0);
-  const totalActual = currentBudgetData.reduce((sum, item) => sum + item.actualAmount, 0);
+  const totalBudgeted = currentBudgetData.reduce((sum: number, item) => sum + item.budgetedAmount, 0);
+  const totalActual = currentBudgetData.reduce((sum: number, item) => sum + item.actualAmount, 0);
   const totalVariance = totalActual - totalBudgeted;
 
   // Separate income and expense items
   const incomeItems = currentBudgetData.filter(item => item.account.type === "INCOME");
   const expenseItems = currentBudgetData.filter(item => item.account.type === "EXPENSE");
 
-  const totalIncomeBudgeted = incomeItems.reduce((sum, item) => sum + item.budgetedAmount, 0);
-  const totalIncomeActual = incomeItems.reduce((sum, item) => sum + item.actualAmount, 0);
-  const totalExpenseBudgeted = expenseItems.reduce((sum, item) => sum + item.budgetedAmount, 0);
-  const totalExpenseActual = expenseItems.reduce((sum, item) => sum + item.actualAmount, 0);
+  const totalIncomeBudgeted = incomeItems.reduce((sum: number, item) => sum + item.budgetedAmount, 0);
+  const totalIncomeActual = incomeItems.reduce((sum: number, item) => sum + item.actualAmount, 0);
+  const totalExpenseBudgeted = expenseItems.reduce((sum: number, item) => sum + item.budgetedAmount, 0);
+  const totalExpenseActual = expenseItems.reduce((sum: number, item) => sum + item.actualAmount, 0);
 
   // Get over-budget items
   const overBudgetItems = currentBudgetData.filter(item => item.percentageUsed > 100);
@@ -213,14 +258,14 @@ const BudgetManagement = ({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Budget Management</h1>
-          <p className="text-gray-600 mt-1">Plan, track, and manage your school's budget</p>
+          <p className="text-gray-600 mt-1">Plan, track, and manage your school&apos;s budget</p>
           {selectedBudget && (
             <div className="flex items-center gap-4 mt-2">
               <span className="text-sm text-gray-500">Current Budget:</span>
               <select
                 value={selectedBudget.id}
                 onChange={(e) => {
-                  const budget = budgets.find(b => b.id === parseInt(e.target.value));
+                  const budget = budgets.find(b => b.id === parseInt(e.target.value)) || null;
                   setSelectedBudget(budget);
                 }}
                 className="text-sm border border-gray-300 rounded px-2 py-1"

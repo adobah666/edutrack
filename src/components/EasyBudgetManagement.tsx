@@ -6,8 +6,39 @@ import Link from "next/link";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
+interface BudgetItem {
+  id: number;
+  budgetId: number;
+  budgetedAmount: number;
+  actualAmount: number;
+  description: string | null;
+  variance: number;
+  percentageUsed: number;
+  createdAt: Date;
+  updatedAt: Date;
+  account: {
+    id: number;
+    name: string;
+    code: string;
+    type: 'INCOME' | 'EXPENSE';
+  };
+}
+
+interface Budget {
+  id: number;
+  name: string;
+  description: string | null;
+  startDate: Date;
+  endDate: Date;
+  totalAmount: number;
+  isActive: boolean;
+  budgetItems: BudgetItem[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 interface BudgetManagementProps {
-  budgets: any[];
+  budgets: Budget[];
   accounts: any[];
   budgetVsActual: any[];
   activeBudget: any;
@@ -25,7 +56,7 @@ const EasyBudgetManagement = ({
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [showRecordSpending, setShowRecordSpending] = useState(false);
   const [showTransactionHistory, setShowTransactionHistory] = useState(false);
-  const [selectedBudgetItem, setSelectedBudgetItem] = useState(null);
+  const [selectedBudgetItem, setSelectedBudgetItem] = useState<BudgetItem | null>(null);
   const [transactionHistory, setTransactionHistory] = useState([]);
   const [selectedBudget, setSelectedBudget] = useState(activeBudget || budgets[0]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,13 +66,13 @@ const EasyBudgetManagement = ({
   const currentBudgetData = selectedBudget?.budgetItems || [];
 
   // Calculate totals
-  const totalPlanned = currentBudgetData.reduce((sum, item) => sum + item.budgetedAmount, 0);
-  const totalSpent = currentBudgetData.reduce((sum, item) => sum + (item.actualAmount || 0), 0);
+  const totalPlanned = currentBudgetData.reduce((sum: number, item: BudgetItem) => sum + item.budgetedAmount, 0);
+  const totalSpent = currentBudgetData.reduce((sum: number, item: BudgetItem) => sum + (item.actualAmount || 0), 0);
   const totalLeft = totalPlanned - totalSpent;
 
   // Get expense categories (most budgets are for expenses)
-  const expenseCategories = currentBudgetData.filter(item => item.account?.type === "EXPENSE");
-  const incomeCategories = currentBudgetData.filter(item => item.account?.type === "INCOME");
+  const expenseCategories = currentBudgetData.filter((item: BudgetItem) => item.account?.type === "EXPENSE");
+  const incomeCategories = currentBudgetData.filter((item: BudgetItem) => item.account?.type === "INCOME");
 
   // API Functions
   const createBudget = async (formData: FormData) => {
@@ -125,7 +156,7 @@ const EasyBudgetManagement = ({
       // Fetch transactions for this specific account within the budget period
       const startDate = new Date(selectedBudget.startDate).toISOString();
       const endDate = new Date(selectedBudget.endDate).toISOString();
-      const response = await fetch(`/api/transactions?accountId=${budgetItem.accountId}&startDate=${startDate}&endDate=${endDate}`);
+      const response = await fetch(`/api/transactions?accountId=${budgetItem.account.id}&startDate=${startDate}&endDate=${endDate}`);
       
       if (!response.ok) throw new Error("Failed to fetch transaction history");
       
@@ -167,7 +198,7 @@ const EasyBudgetManagement = ({
           <div className="w-24 h-24 mx-auto mb-6 bg-blue-100 rounded-full flex items-center justify-center">
             <Image src="/finance.png" alt="" width={48} height={48} />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Let's Create Your First Budget!</h3>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">Let&apos;s Create Your First Budget!</h3>
           <p className="text-gray-600 mb-6 max-w-md mx-auto">
             A budget helps you plan how much to spend on different things like salaries, utilities, and supplies.
           </p>
@@ -215,7 +246,7 @@ const EasyBudgetManagement = ({
             <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
               <h3 className="text-sm font-medium text-red-600 mb-2">Total Spent</h3>
               <p className="text-3xl font-bold text-red-800">GHS {totalSpent.toLocaleString()}</p>
-              <p className="text-sm text-red-600 mt-1">How much you've actually spent</p>
+              <p className="text-sm text-red-600 mt-1">How much you&apos;ve actually spent</p>
             </div>
             
             <div className={`${totalLeft >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-6 text-center`}>
@@ -262,7 +293,7 @@ const EasyBudgetManagement = ({
                   <Image src="/create.png" alt="" width={32} height={32} className="opacity-50" />
                 </div>
                 <h4 className="text-lg font-medium text-gray-900 mb-2">No Categories Yet</h4>
-                <p className="text-gray-600 mb-4">Add categories like "Salaries", "Utilities", "Supplies" to start budgeting</p>
+                <p className="text-gray-600 mb-4">Add categories like &quot;Salaries&quot;, &quot;Utilities&quot;, &quot;Supplies&quot; to start budgeting</p>
                 <button
                   onClick={() => setShowAddCategory(true)}
                   className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700"
@@ -273,7 +304,7 @@ const EasyBudgetManagement = ({
             ) : (
               <div className="p-6">
                 <div className="grid gap-4">
-                  {currentBudgetData.map((item) => {
+                  {currentBudgetData.map((item: BudgetItem) => {
                     const spent = item.actualAmount || 0;
                     const planned = item.budgetedAmount;
                     const percentage = planned > 0 ? (spent / planned) * 100 : 0;
@@ -375,7 +406,7 @@ const EasyBudgetManagement = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">What's this budget for?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">What&apos;s this budget for?</label>
                   <textarea
                     name="description"
                     className="w-full border border-gray-300 rounded-md px-3 py-2 h-20"
@@ -536,8 +567,8 @@ const EasyBudgetManagement = ({
                     className="w-full border border-gray-300 rounded-md px-3 py-2"
                   >
                     <option value="">Choose category</option>
-                    {currentBudgetData.map((item) => (
-                      <option key={item.accountId} value={item.accountId}>
+                    {currentBudgetData.map((item: BudgetItem) => (
+                      <option key={item.account.id} value={item.account.id}>
                         {item.account?.name} ({item.account?.type === "INCOME" ? "Income" : "Expense"})
                       </option>
                     ))}
@@ -571,14 +602,14 @@ const EasyBudgetManagement = ({
                     type="date"
                     name="date"
                     required
-                    min={new Date(selectedBudget.startDate).toISOString().split('T')[0]}
-                    max={new Date(selectedBudget.endDate).toISOString().split('T')[0]}
+                    min={selectedBudget.startDate.toISOString().split('T')[0]}
+                    max={selectedBudget.endDate.toISOString().split('T')[0]}
                     defaultValue={
                       // Default to today if within range, otherwise budget start date
                       (() => {
                         const today = new Date().toISOString().split('T')[0];
-                        const budgetStart = new Date(selectedBudget.startDate).toISOString().split('T')[0];
-                        const budgetEnd = new Date(selectedBudget.endDate).toISOString().split('T')[0];
+                        const budgetStart = selectedBudget.startDate.toISOString().split('T')[0];
+                        const budgetEnd = selectedBudget.endDate.toISOString().split('T')[0];
                         
                         if (today >= budgetStart && today <= budgetEnd) {
                           return today;

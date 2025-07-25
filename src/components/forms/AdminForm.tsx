@@ -51,6 +51,7 @@ const AdminForm = ({
     {
       success: false,
       error: false,
+      message: "",
     }
   );
 

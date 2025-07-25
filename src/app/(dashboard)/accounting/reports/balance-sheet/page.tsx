@@ -158,7 +158,7 @@ const BalanceSheetPage = async ({
         </Link>
         <BalanceSheetPrint 
           reportData={{
-            school: school || { name: "School Name", address: "", phone: "" },
+            school: school ? { ...school, phone: school.phone ?? "" } : { name: "School Name", address: "", phone: "" },
             assetAccountTotals,
             liabilityAccountTotals,
             equityAccountTotals,

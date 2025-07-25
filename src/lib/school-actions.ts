@@ -348,7 +348,7 @@ export const updateAdmin = async (
     });
 
     revalidatePath("/list/admins");
-    return { success: true, error: false };
+    return { success: true, error: false, message: "Admin updated successfully" };
   } catch (err) {
     console.error("Error updating admin:", err);
     const errorMessage =

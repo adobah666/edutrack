@@ -112,7 +112,11 @@ const CashFlowPage = async ({
         </Link>
         <CashFlowPrint 
           reportData={{
-            school: school || { name: "School Name", address: "", phone: "" },
+            school: {
+              name: school?.name ?? "School Name",
+              address: school?.address ?? "",
+              phone: school?.phone ?? ""
+            },
             operatingActivities,
             investingActivities,
             financingActivities,

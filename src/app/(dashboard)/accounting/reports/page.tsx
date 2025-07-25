@@ -160,7 +160,7 @@ const ReportsPage = async () => {
               liabilityAccounts,
               equityAccounts,
               recentTransactions,
-              school: school || { name: "School Name", address: "", phone: "" }
+              school: school ? { ...school, phone: school.phone ?? "" } : { name: "School Name", address: "", phone: "" }
             }}
           />
         </div>

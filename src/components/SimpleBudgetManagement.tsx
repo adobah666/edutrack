@@ -28,7 +28,7 @@ const SimpleBudgetManagement = ({
   const [showEditBudgetItem, setShowEditBudgetItem] = useState(false);
   const [showRecordTransaction, setShowRecordTransaction] = useState(false);
   const [selectedBudget, setSelectedBudget] = useState(activeBudget || budgets[0]);
-  const [selectedBudgetItem, setSelectedBudgetItem] = useState(null);
+  const [selectedBudgetItem, setSelectedBudgetItem] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -36,17 +36,17 @@ const SimpleBudgetManagement = ({
   const currentBudgetData = selectedBudget?.budgetItems || [];
 
   // Calculate totals
-  const totalBudgeted = currentBudgetData.reduce((sum, item) => sum + item.budgetedAmount, 0);
-  const totalActual = currentBudgetData.reduce((sum, item) => sum + item.actualAmount, 0);
+  const totalBudgeted = currentBudgetData.reduce((sum: number, item: any) => sum + item.budgetedAmount, 0);
+  const totalActual = currentBudgetData.reduce((sum: number, item: any) => sum + item.actualAmount, 0);
   const totalVariance = totalActual - totalBudgeted;
 
   // Separate income and expense items
-  const incomeItems = currentBudgetData.filter(item => item.account?.type === "INCOME");
-  const expenseItems = currentBudgetData.filter(item => item.account?.type === "EXPENSE");
+  const incomeItems = currentBudgetData.filter((item: any) => item.account?.type === "INCOME");
+  const expenseItems = currentBudgetData.filter((item: any) => item.account?.type === "EXPENSE");
 
   // Get alerts
-  const overBudgetItems = currentBudgetData.filter(item => item.percentageUsed > 100);
-  const nearBudgetItems = currentBudgetData.filter(item => item.percentageUsed > 80 && item.percentageUsed <= 100);
+  const overBudgetItems = currentBudgetData.filter((item: any) => item.percentageUsed > 100);
+  const nearBudgetItems = currentBudgetData.filter((item: any) => item.percentageUsed > 80 && item.percentageUsed <= 100);
 
   // API Functions
   const createBudget = async (formData: FormData) => {
@@ -87,6 +87,7 @@ const SimpleBudgetManagement = ({
   };
 
   const updateBudgetItem = async (formData: FormData) => {
+    if (!selectedBudgetItem) return;
     setIsLoading(true);
     try {
       const response = await fetch(`/api/budget-items/${selectedBudgetItem.id}`, {
@@ -377,7 +378,7 @@ const SimpleBudgetManagement = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {currentBudgetData.map((item) => (
+                    {currentBudgetData.map((item: any) => (
                       <tr key={item.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div>

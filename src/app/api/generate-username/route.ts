@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { getSchoolFilter } from "@/lib/school-context";
+import { clerkClient } from "@clerk/nextjs/server";
 
 export async function POST(req: Request) {
   try {
@@ -32,9 +33,9 @@ export async function POST(req: Request) {
 
       // Option 2: Use name + surname
       if (surname) {
-        const cleanName = name.toLowerCase().replace(/[^a-z]/g, '');
-        const cleanSurname = surname.toLowerCase().replace(/[^a-z]/g, '');
-        return `${cleanName}.${cleanSurname}`;
+        const cleanName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const cleanSurname = surname.toLowerCase().replace(/[^a-z0-9]/g, '');
+        return `${cleanName}_${cleanSurname}`;
       }
 
       // Option 3: Use just name
@@ -42,32 +43,56 @@ export async function POST(req: Request) {
     };
 
     const baseUsername = generateBaseUsername(name, surname, email);
+    console.log(`Generated base username: ${baseUsername} from name: ${name}, surname: ${surname}, email: ${email}`);
 
-    // Check if username exists and generate unique one
+    // Generate username with random 4-digit number for uniqueness (max 20 chars)
     const generateUniqueUsername = async (base: string): Promise<string> => {
-      let username = base;
-      let counter = 1;
+      let attempts = 0;
+      const maxAttempts = 10;
+      const maxLength = 20;
 
-      while (true) {
-        // Since we checked schoolFilter.schoolId at the start, we know it's not null here
-        const existingUser = await checkUsernameExists(username, userType, schoolFilter.schoolId as string);
+      while (attempts < maxAttempts) {
+        // Generate a random 4-digit number
+        const randomNumber = Math.floor(1000 + Math.random() * 9000);
+        let username = `${base}_${randomNumber}`;
         
-        if (!existingUser) {
+        // Truncate if too long (keep the random number, truncate the base)
+        if (username.length > maxLength) {
+          const availableBaseLength = maxLength - 5; // 5 chars for "_1234"
+          const truncatedBase = base.substring(0, availableBaseLength);
+          username = `${truncatedBase}_${randomNumber}`;
+        }
+        
+        console.log(`Checking username: ${username} (length: ${username.length})`);
+        
+        // Check both Clerk and local database
+        const [clerkExists, localExists] = await Promise.all([
+          checkUsernameInClerk(username),
+          checkUsernameExists(username, userType, schoolFilter.schoolId as string)
+        ]);
+        
+        console.log(`Username ${username} - Clerk exists: ${clerkExists}, Local exists: ${localExists}`);
+        
+        if (!clerkExists && !localExists) {
+          console.log(`Username ${username} is available!`);
           return username;
         }
 
-        // If exists, add number suffix
-        username = `${base}${counter}`;
-        counter++;
-
-        // Prevent infinite loop
-        if (counter > 999) {
-          throw new Error("Unable to generate unique username");
-        }
+        attempts++;
       }
+
+      // Fallback: use timestamp if all random attempts fail (ensure it fits in 20 chars)
+      const timestamp = Date.now().toString().slice(-4);
+      const availableBaseLength = maxLength - 5; // 5 chars for "_1234"
+      const truncatedBase = base.substring(0, availableBaseLength);
+      const fallbackUsername = `${truncatedBase}_${timestamp}`;
+      console.log(`Using fallback username: ${fallbackUsername} (length: ${fallbackUsername.length})`);
+      return fallbackUsername;
     };
 
     const uniqueUsername = await generateUniqueUsername(baseUsername);
+
+    console.log(`Generated unique username: ${uniqueUsername} for base: ${baseUsername}`);
 
     return NextResponse.json({ 
       username: uniqueUsername,
@@ -87,48 +112,57 @@ export async function POST(req: Request) {
   }
 }
 
+async function checkUsernameInClerk(username: string): Promise<boolean> {
+  try {
+    console.log(`Checking Clerk for username: ${username}`);
+    const existingUsers = await clerkClient().users.getUserList({
+      username: [username],
+    });
+    console.log(`Clerk check result for ${username}: ${existingUsers.totalCount} users found`);
+    return existingUsers.totalCount > 0;
+  } catch (error) {
+    console.error("Error checking username in Clerk:", error);
+    return true; // Return true to be safe if there's an error
+  }
+}
+
 async function checkUsernameExists(username: string, userType: string, schoolId: string): Promise<boolean> {
   try {
-    let existingUser = null;
+    console.log(`Checking local database for username: ${username} in school: ${schoolId}`);
+    
+    // Always check ALL user types regardless of userType parameter
+    // This ensures we don't have conflicts across different user types
+    const [student, teacher, parent, admin] = await Promise.all([
+      prisma.student.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.teacher.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.parent.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.admin.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      })
+    ]);
 
-    switch (userType) {
-      case 'student':
-        existingUser = await prisma.student.findFirst({
-          where: { 
-            username,
-            schoolId 
-          }
-        });
-        break;
-      case 'teacher':
-        existingUser = await prisma.teacher.findFirst({
-          where: { 
-            username,
-            schoolId 
-          }
-        });
-        break;
-      case 'parent':
-        existingUser = await prisma.parent.findFirst({
-          where: { 
-            username,
-            schoolId 
-          }
-        });
-        break;
-      default:
-        // Check all tables if userType not specified
-        const [student, teacher, parent] = await Promise.all([
-          prisma.student.findFirst({ where: { username, schoolId } }),
-          prisma.teacher.findFirst({ where: { username, schoolId } }),
-          prisma.parent.findFirst({ where: { username, schoolId } })
-        ]);
-        existingUser = student || teacher || parent;
-    }
+    const existingUser = student || teacher || parent || admin;
+    console.log(`Local DB check result for ${username}:`, {
+      student: !!student,
+      teacher: !!teacher, 
+      parent: !!parent,
+      admin: !!admin,
+      exists: !!existingUser
+    });
 
     return !!existingUser;
   } catch (error) {
-    console.error("Error checking username:", error);
+    console.error("Error checking username in local database:", error);
     return true; // Return true to be safe if there's an error
   }
 }

@@ -23,6 +23,55 @@ import { getCurrentUserSchool, requireSchoolAccess } from "./school-context";
 
 type CurrentState = { success: boolean; error: boolean; message?: string };
 
+// Helper function to create username error message with the actual username
+function createUsernameErrorMessage(username: string, source: string): string {
+  return `Username "${username}" is taken in ${source}. Please try another.`;
+}
+
+// Helper function to check if username exists in local database across ALL user types
+async function checkLocalUsernameExists(username: string, schoolId: string): Promise<boolean> {
+  try {
+    console.log(`[HELPER] Checking local database for username: ${username} in school: ${schoolId}`);
+    const [student, teacher, parent, admin] = await Promise.all([
+      prisma.student.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.teacher.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.parent.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      }),
+      prisma.admin.findFirst({ 
+        where: { username, schoolId },
+        select: { id: true, username: true }
+      })
+    ]);
+
+    const exists = !!(student || teacher || parent || admin);
+    console.log(`[HELPER] Local database check results for ${username}:`, {
+      student: !!student,
+      teacher: !!teacher,
+      parent: !!parent,
+      admin: !!admin,
+      exists: exists
+    });
+
+    if (student) console.log(`[HELPER] Found student with username ${username}:`, student);
+    if (teacher) console.log(`[HELPER] Found teacher with username ${username}:`, teacher);
+    if (parent) console.log(`[HELPER] Found parent with username ${username}:`, parent);
+    if (admin) console.log(`[HELPER] Found admin with username ${username}:`, admin);
+
+    return exists;
+  } catch (error) {
+    console.error("[HELPER] Error checking local username:", error);
+    return true; // Return true to be safe if there's an error
+  }
+}
+
 export const createSubject = async (
   currentState: CurrentState,
   data: SubjectSchema
@@ -126,17 +175,35 @@ export const createParent = async (
       return { success: false, error: true, message: "School ID is required" };
     }
 
-    // SECOND: Check if username exists
+    // SECOND: Check if username exists in Clerk
+    console.log(`[ACTIONS] Checking Clerk for username: ${data.username}`);
     const existingUsersByUsername = await clerkClient.users.getUserList({
       username: [data.username],
     });
+    console.log(`[ACTIONS] Clerk check result for ${data.username}: ${existingUsersByUsername.totalCount} users found`);
     if (existingUsersByUsername.totalCount > 0) {
+      console.log(`[ACTIONS] Username ${data.username} exists in Clerk - REJECTING`);
       return {
         success: false,
         error: true,
-        message: "That username is taken. Please try another.",
+        message: `Username "${data.username}" is taken in Clerk. Please try another.`,
       };
     }
+
+    // ALSO: Check if username exists in local database across ALL user types
+    console.log(`[ACTIONS] Checking local database for username: ${data.username} in school: ${schoolId}`);
+    const localUsernameExists = await checkLocalUsernameExists(data.username, schoolId);
+    console.log(`[ACTIONS] Local database check result for ${data.username}: ${localUsernameExists}`);
+    if (localUsernameExists) {
+      console.log(`[ACTIONS] Username ${data.username} exists in local database - REJECTING`);
+      return {
+        success: false,
+        error: true,
+        message: "That username is taken in local database. Please try another.",
+      };
+    }
+
+    console.log(`[ACTIONS] Username ${data.username} is available - PROCEEDING`);
 
     // THIRD: Check if email exists (if provided)
     if (data.email) {
@@ -304,16 +371,19 @@ export const createTeacher = async (
       return { success: false, error: true, message: "School ID is required" };
     }
 
-    // SECOND: Check if username already exists
+    // SECOND: Check if username already exists in Clerk
+    console.log(`[ACTIONS] Checking Clerk for username: ${data.username}`);
     try {
       const existingUsers = await clerkClient.users.getUserList({
         username: [data.username],
       });
+      console.log(`[ACTIONS] Clerk check result for ${data.username}: ${existingUsers.totalCount} users found`);
       if (existingUsers.totalCount > 0) {
+        console.log(`[ACTIONS] Username ${data.username} exists in Clerk - REJECTING`);
         return {
           success: false,
           error: true,
-          message: "That username is taken. Please try another.",
+          message: "That username is taken in Clerk. Please try another.",
         };
       }
     } catch (error) {
@@ -324,6 +394,21 @@ export const createTeacher = async (
         message: "Error validating username",
       };
     }
+
+    // ALSO: Check if username exists in local database across ALL user types
+    console.log(`[ACTIONS] Checking local database for username: ${data.username} in school: ${schoolId}`);
+    const localUsernameExists = await checkLocalUsernameExists(data.username, schoolId);
+    console.log(`[ACTIONS] Local database check result for ${data.username}: ${localUsernameExists}`);
+    if (localUsernameExists) {
+      console.log(`[ACTIONS] Username ${data.username} exists in local database - REJECTING`);
+      return {
+        success: false,
+        error: true,
+        message: "That username is taken in local database. Please try another.",
+      };
+    }
+
+    console.log(`[ACTIONS] Username ${data.username} is available - PROCEEDING`);
 
     // THIRD: Check if email already exists (if provided)
     if (data.email) {
@@ -546,6 +631,8 @@ export const createStudent = async (
   let createdClerkUser = null;
 
   try {
+    // DEBUG: Show the exact username being submitted
+    console.error(`[DEBUG] createStudent called with username: "${data.username}" (length: ${data.username.length})`);
     // FIRST: Validate school context before doing anything else
     const userContext = await getCurrentUserSchool();
 

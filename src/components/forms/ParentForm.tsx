@@ -33,6 +33,7 @@ const ParentForm = ({
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ParentSchema>({
     resolver: zodResolver(parentSchema), defaultValues: {
@@ -133,13 +134,72 @@ const ParentForm = ({
       <span className="text-xs text-gray-400 font-medium mb-1">
         Authentication Information
       </span>
+      {/* Username field on its own row to prevent overlap */}
       <div className="flex justify-between flex-wrap gap-4">
-        <InputField
-          label="Username"
-          name="username"
-          register={register}
-          error={errors?.username}
-        />
+        <div className="flex flex-col gap-2 w-full md:w-1/2">
+          <label className="text-xs text-gray-500">Username</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              {...register("username")}
+              className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm flex-1"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                const nameValue = (document.querySelector('input[name="name"]') as HTMLInputElement)?.value;
+                const surnameValue = (document.querySelector('input[name="surname"]') as HTMLInputElement)?.value;
+                const emailValue = (document.querySelector('input[name="email"]') as HTMLInputElement)?.value;
+                
+                if (!nameValue) {
+                  toast.error("Please enter a name first");
+                  return;
+                }
+
+                try {
+                  const response = await fetch('/api/generate-username', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      name: nameValue,
+                      surname: surnameValue,
+                      email: emailValue,
+                      userType: 'parent'
+                    })
+                  });
+
+                  if (!response.ok) throw new Error('Failed to generate username');
+                  
+                  const data = await response.json();
+                  
+                  // Use React Hook Form's setValue to properly update the form state
+                  setValue("username", data.username, { 
+                    shouldValidate: true,
+                    shouldDirty: true,
+                    shouldTouch: true 
+                  });
+                  
+                  toast.success(`Username generated: ${data.username}`);
+                } catch (error) {
+                  toast.error("Failed to generate username");
+                }
+              }}
+              className="bg-blue-500 text-white px-3 py-2 rounded-md hover:bg-blue-600 text-sm whitespace-nowrap"
+              title="Generate username automatically"
+            >
+              🎲 Generate
+            </button>
+          </div>
+          {errors?.username && (
+            <p className="text-xs text-red-400">
+              {errors.username.message?.toString()}
+            </p>
+          )}
+        </div>
+      </div>
+      
+      {/* Password and Email on separate row */}
+      <div className="flex justify-between flex-wrap gap-4">
         <InputField
           label="Password"
           name="password"
@@ -152,7 +212,8 @@ const ParentForm = ({
           name="email"
           register={register}
           error={errors?.email}
-        />      </div>
+        />
+      </div>
       <span className="text-xs text-gray-400 font-medium mb-1">
         Personal Information
       </span>

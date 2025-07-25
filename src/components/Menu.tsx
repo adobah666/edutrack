@@ -108,6 +108,18 @@ const menuItems = [
 			},
 			{
 				icon: "/finance.png",
+				label: "Pay Fees",
+				href: "/student/fees",
+				visible: ["student"],
+			},
+			{
+				icon: "/finance.png",
+				label: "Pay Children's Fees",
+				href: "/parent/fees",
+				visible: ["parent"],
+			},
+			{
+				icon: "/finance.png",
 				label: "Payroll",
 				href: "/list/payroll",
 				visible: ["admin"],
@@ -116,6 +128,12 @@ const menuItems = [
 				icon: "/result.png",
 				label: "Accounting",
 				href: "/accounting",
+				visible: ["admin"],
+			},
+			{
+				icon: "/finance.png",
+				label: "Test Payment",
+				href: "/test-payment",
 				visible: ["admin"],
 			},
 			{

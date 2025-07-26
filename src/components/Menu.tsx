@@ -101,6 +101,12 @@ const menuItems = [
 				visible: ["admin", "teacher", "student", "parent"],
 			},
 			{
+				icon: "/result.png",
+				label: "Term Results",
+				href: "/list/term-results",
+				visible: ["admin", "teacher", "student", "parent"],
+			},
+			{
 				icon: "/finance.png",
 				label: "Fees",
 				href: "/list/fees",
@@ -130,10 +136,11 @@ const menuItems = [
 				href: "/accounting",
 				visible: ["admin"],
 			},
+
 			{
-				icon: "/finance.png",
-				label: "Test Payment",
-				href: "/test-payment",
+				icon: "/setting.png",
+				label: "Admin Settings",
+				href: "/admin/settings",
 				visible: ["admin"],
 			},
 			{

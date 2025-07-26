@@ -10,10 +10,10 @@ export type SubjectSchema = z.infer<typeof subjectSchema>;
 
 export const classSchema = z.object({
   id: z.coerce.number().optional(),
-  name: z.string().min(1, { message: "Subject name is required!" }),
-  capacity: z.coerce.number().min(1, { message: "Capacity name is required!" }),
-  gradeId: z.coerce.number().min(1, { message: "Grade name is required!" }),
-  supervisorId: z.coerce.string().optional(),
+  name: z.string().min(1, { message: "Class name is required!" }),
+  capacity: z.coerce.number().min(1, { message: "Capacity is required!" }),
+  gradeId: z.coerce.number().min(1, { message: "Grade is required!" }),
+  supervisorId: z.string().min(1, { message: "Supervisor is required!" }),
 });
 
 export type ClassSchema = z.infer<typeof classSchema>;
@@ -81,6 +81,7 @@ export const examSchema = z.object({
   term: z.enum(["FIRST", "SECOND", "THIRD", "FINAL"], { message: "Term is required!" }),
   subjectId: z.coerce.number({ message: "Subject is required!" }),
   classId: z.coerce.number({ message: "Class is required!" }),
+  maxPoints: z.coerce.number().min(1, { message: "Max points must be at least 1!" }).default(100),
 });
 
 
@@ -137,6 +138,7 @@ export const assignmentSchema = z.object({
   classId: z.coerce.number().min(1, { message: "Class is required!" }),
   subjectId: z.coerce.number().min(1, { message: "Subject is required!" }),
   teacherId: z.string().min(1, { message: "Teacher is required!" }),
+  term: z.enum(["FIRST", "SECOND", "THIRD", "FINAL"], { message: "Term is required!" }).default("FIRST"),
 });
 
 export type AssignmentSchema = z.infer<typeof assignmentSchema>;

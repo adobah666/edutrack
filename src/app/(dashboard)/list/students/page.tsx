@@ -84,7 +84,7 @@ const StudentListPage = async ({
     query.classId = parseInt(classId, 10);
   }
 
-  const [rawData, count] = await prisma.$transaction([
+  const [rawData, count, genderStats] = await prisma.$transaction([
     prisma.student.findMany({
       where: query,
       include: {
@@ -98,6 +98,13 @@ const StudentListPage = async ({
       skip: ITEM_PER_PAGE * (p - 1),
     }),
     prisma.student.count({ where: query }),
+    prisma.student.groupBy({
+      by: ['sex'],
+      where: query,
+      _count: {
+        sex: true,
+      },
+    }),
   ]);
 
   // Sort the data by relevance if there's a search term
@@ -118,6 +125,10 @@ const StudentListPage = async ({
         return aFullName.localeCompare(bFullName);
       })
     : rawData;
+
+  // Calculate gender counts from the genderStats
+  const maleCount = genderStats.find(stat => stat.sex === 'MALE')?._count.sex || 0;
+  const femaleCount = genderStats.find(stat => stat.sex === 'FEMALE')?._count.sex || 0;
 
   const columns = [
     {
@@ -264,7 +275,7 @@ const StudentListPage = async ({
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
-                {sortedData.filter(s => s.sex === 'MALE').length}M / {sortedData.filter(s => s.sex === 'FEMALE').length}F
+                {maleCount}M / {femaleCount}F
               </p>
               <p className="text-sm text-gray-600">Gender Ratio</p>
             </div>

@@ -1,13 +1,27 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+'use client';
+
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import PaystackPayment from "@/components/PaystackPayment";
 
-const TestPaymentPage = async () => {
-  const { userId, sessionClaims } = auth();
-  const role = (sessionClaims?.metadata as { role?: string })?.role;
+const TestPaymentPage = () => {
+  const { user, isLoaded } = useUser();
+  const router = useRouter();
+  const role = user?.publicMetadata?.role as string;
 
-  if (!userId || role !== "admin") {
-    redirect("/");
+  useEffect(() => {
+    if (isLoaded && (!user || role !== "admin")) {
+      router.push("/");
+    }
+  }, [user, isLoaded, role, router]);
+
+  if (!isLoaded) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user || role !== "admin") {
+    return null;
   }
 
   return (

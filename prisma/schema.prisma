@@ -154,14 +154,16 @@ model Class {
 }
 
 model Subject {
-  id          Int          @id @default(autoincrement())
-  name        String
-  schoolId    String
-  assignments Assignment[]
-  exams       Exam[]
-  lessons     Lesson[]
-  school      School       @relation(fields: [schoolId], references: [id])
-  teachers    Teacher[]    @relation("SubjectToTeacher")
+  id              Int          @id @default(autoincrement())
+  name            String
+  schoolId        String
+  assignmentWeight Float       @default(0.3) // 30% for assignments
+  examWeight      Float       @default(0.7) // 70% for exams
+  assignments     Assignment[]
+  exams           Exam[]
+  lessons         Lesson[]
+  school          School       @relation(fields: [schoolId], references: [id])
+  teachers        Teacher[]    @relation("SubjectToTeacher")
   
   @@unique([name, schoolId])
 }
@@ -191,6 +193,7 @@ model Exam {
   classId   Int?
   subjectId Int?
   schoolId  String
+  maxPoints Int      @default(100)
   class     Class?   @relation(fields: [classId], references: [id])
   school    School   @relation(fields: [schoolId], references: [id])
   subject   Subject? @relation(fields: [subjectId], references: [id])
@@ -208,6 +211,7 @@ model Assignment {
   subjectId   Int
   teacherId   String
   schoolId    String
+  term        Term     @default(FIRST)
   class       Class    @relation(fields: [classId], references: [id])
   school      School   @relation(fields: [schoolId], references: [id])
   subject     Subject  @relation(fields: [subjectId], references: [id])

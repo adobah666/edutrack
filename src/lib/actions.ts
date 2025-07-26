@@ -453,7 +453,31 @@ export const createTeacher = async (
         const clerkError = error as any;
         if (clerkError.errors && clerkError.errors.length > 0) {
           const firstError = clerkError.errors[0];
-          if (firstError.message) {
+          
+          // Handle specific error cases with user-friendly messages
+          if (firstError.code === 'form_data_missing') {
+            if (firstError.longMessage && firstError.longMessage.includes('email_address')) {
+              errorMessage = "Email address is required. Please provide a valid email address for the teacher.";
+            } else if (firstError.longMessage && firstError.longMessage.includes('username')) {
+              errorMessage = "Username is required. Please provide a valid username for the teacher.";
+            } else if (firstError.longMessage && firstError.longMessage.includes('password')) {
+              errorMessage = "Password is required. Please provide a valid password for the teacher.";
+            } else {
+              errorMessage = "Required field is missing. Please check that all required fields are filled out.";
+            }
+          } else if (firstError.code === 'form_identifier_exists') {
+            if (firstError.longMessage && firstError.longMessage.includes('email')) {
+              errorMessage = "That email address is already taken. Please use a different email address.";
+            } else if (firstError.longMessage && firstError.longMessage.includes('username')) {
+              errorMessage = "That username is already taken. Please use a different username.";
+            } else {
+              errorMessage = "That identifier is already taken. Please try another.";
+            }
+          } else if (firstError.code === 'form_password_pwned') {
+            errorMessage = "This password has been found in a data breach. Please choose a more secure password.";
+          } else if (firstError.code === 'form_password_length_too_short') {
+            errorMessage = "Password is too short. Please choose a password with at least 8 characters.";
+          } else if (firstError.message) {
             errorMessage = firstError.message;
           } else if (firstError.longMessage) {
             errorMessage = firstError.longMessage;
@@ -1478,20 +1502,31 @@ export const createResult = async (
       return { success: false, error: true, message: "School ID is required" };
     }
 
-    await prisma.result.create({
-      data: {
-        score: data.score,
-        feedback: data.feedback || null,
-        school: {
-          connect: { id: schoolId },
-        },
-        exam: {
-          connect: { id: data.examId },
-        },
-        student: {
-          connect: { id: data.studentId },
-        },
+    // Build the data object conditionally based on whether it's an exam or assignment
+    const resultData: any = {
+      score: data.score,
+      feedback: data.feedback || null,
+      school: {
+        connect: { id: schoolId },
       },
+      student: {
+        connect: { id: data.studentId },
+      },
+    };
+
+    // Connect to either exam or assignment, but not both
+    if (data.examId) {
+      resultData.exam = {
+        connect: { id: data.examId },
+      };
+    } else if (data.assignmentId) {
+      resultData.assignment = {
+        connect: { id: data.assignmentId },
+      };
+    }
+
+    await prisma.result.create({
+      data: resultData,
     });
 
     // revalidatePath("/list/results");
@@ -1507,20 +1542,39 @@ export const updateResult = async (
   data: ResultSchema
 ) => {
   try {
+    // Build the data object conditionally based on whether it's an exam or assignment
+    const updateData: any = {
+      score: data.score,
+      feedback: data.feedback || null,
+      student: {
+        connect: { id: data.studentId },
+      },
+    };
+
+    // Connect to either exam or assignment, but not both
+    if (data.examId) {
+      updateData.exam = {
+        connect: { id: data.examId },
+      };
+      // Disconnect assignment if switching from assignment to exam
+      updateData.assignment = {
+        disconnect: true,
+      };
+    } else if (data.assignmentId) {
+      updateData.assignment = {
+        connect: { id: data.assignmentId },
+      };
+      // Disconnect exam if switching from exam to assignment
+      updateData.exam = {
+        disconnect: true,
+      };
+    }
+
     await prisma.result.update({
       where: {
         id: data.id,
       },
-      data: {
-        score: data.score,
-        feedback: data.feedback || null,
-        exam: {
-          connect: { id: data.examId },
-        },
-        student: {
-          connect: { id: data.studentId },
-        },
-      },
+      data: updateData,
     });
 
     // revalidatePath("/list/results");
@@ -1805,7 +1859,11 @@ export async function getClasses() {
 
 export async function fetchStudents() {
   try {
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const students = await prisma.student.findMany({
+      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       select: {
         id: true,
         name: true,
@@ -1830,9 +1888,13 @@ export async function fetchExams() {
     const { userId, sessionClaims } = auth();
     const role = (sessionClaims?.metadata as { role?: string })?.role;
 
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
     const query = {
-      where:
-        role === "teacher" && userId
+      where: {
+        ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
+        ...(role === "teacher" && userId
           ? {
             subject: {
               teachers: {
@@ -1842,11 +1904,13 @@ export async function fetchExams() {
               },
             },
           }
-          : undefined,
+          : {}),
+      },
       select: {
         id: true,
         title: true,
         classId: true,
+        maxPoints: true,
         subject: {
           select: {
             name: true,
@@ -1864,9 +1928,57 @@ export async function fetchExams() {
       id: exam.id,
       title: `${exam.title} (${exam.subject?.name || "No Subject"})`,
       classId: exam.classId,
+      maxPoints: exam.maxPoints,
     }));
   } catch (error) {
     console.error("Error fetching exams:", error);
+    return [];
+  }
+}
+
+export async function fetchAssignments() {
+  try {
+    const { userId, sessionClaims } = auth();
+    const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+    // Get school filter for current user
+    const schoolFilter = await getSchoolFilter();
+
+    const query = {
+      where: {
+        ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}), // Add school filtering
+        ...(role === "teacher" && userId
+          ? {
+            teacherId: userId,
+          }
+          : {}),
+      },
+      select: {
+        id: true,
+        title: true,
+        classId: true,
+        maxPoints: true,
+        subject: {
+          select: {
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        title: "asc",
+      },
+    } as const;
+
+    const assignments = await prisma.assignment.findMany(query);
+
+    return assignments.map((assignment) => ({
+      id: assignment.id,
+      title: `${assignment.title} (${assignment.subject?.name || "No Subject"})`,
+      classId: assignment.classId,
+      maxPoints: assignment.maxPoints,
+    }));
+  } catch (error) {
+    console.error("Error fetching assignments:", error);
     return [];
   }
 }

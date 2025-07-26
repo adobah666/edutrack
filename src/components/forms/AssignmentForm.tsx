@@ -79,7 +79,7 @@ const AssignmentForm = ({
             error={errors?.title}
           />
         </div>
-        
+
         {data && (
           <InputField
             label="Id"
@@ -214,12 +214,33 @@ const AssignmentForm = ({
             </p>
           )}
         </div>
+
+
+
+        <div className="flex flex-col gap-2 w-full md:w-1/3">
+          <label className="text-xs text-gray-500">Term</label>
+          <select
+            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
+            {...register("term")}
+            defaultValue={data?.term || "FIRST"}
+          >
+            <option value="FIRST">First Term</option>
+            <option value="SECOND">Second Term</option>
+            <option value="THIRD">Third Term</option>
+            <option value="FINAL">Final Term</option>
+          </select>
+          {errors.term?.message && (
+            <p className="text-xs text-red-400">
+              {errors.term.message.toString()}
+            </p>
+          )}
+        </div>
       </div>
-      
+
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
-      
+
       <button className="bg-blue-400 text-white p-2 rounded-md">
         {type === "create" ? "Create" : "Update"}
       </button>

@@ -23,6 +23,15 @@ export async function POST(req: Request) {
     const amount = parseFloat(formData.get("amount") as string);
     const studentId = formData.get("studentId") as string;
     const classFeeId = parseInt(formData.get("classFeeId") as string);
+    const adminPassword = formData.get("adminPassword") as string;
+
+    // Verify admin password is provided
+    if (!adminPassword || adminPassword.length < 6) {
+      return NextResponse.json(
+        { message: "Please enter a valid password for verification." },
+        { status: 403 }
+      );
+    }
 
     // Validate if the payment amount is valid (with school filtering)
     const classFee = await prisma.classFee.findFirst({

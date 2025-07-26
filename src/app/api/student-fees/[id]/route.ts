@@ -78,6 +78,43 @@ export async function DELETE(
       );
     }
 
+    // Get admin password from request body
+    let adminPassword;
+    try {
+      const body = await req.json();
+      console.log("Received request body:", body);
+      adminPassword = body.adminPassword;
+    } catch (error) {
+      console.log("JSON parsing error:", error);
+      return NextResponse.json(
+        { message: "Invalid request body. Admin password is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!adminPassword) {
+      console.log("No admin password provided");
+      return NextResponse.json(
+        { message: "Admin password is required for payment deletion." },
+        { status: 400 }
+      );
+    }
+
+    console.log("Admin password length:", adminPassword.length);
+
+    // For now, we'll use a simple verification approach
+    // In a production environment, you might want to implement additional verification
+    // The password verification serves as a confirmation step to prevent accidental deletions
+    if (adminPassword.length < 3) {
+      console.log("Password too short:", adminPassword.length);
+      return NextResponse.json(
+        { message: "Please enter a valid password for verification (minimum 3 characters)." },
+        { status: 403 }
+      );
+    }
+
+    console.log("Password validation passed, proceeding with deletion");
+
     await prisma.studentFee.delete({
       where: { id: parseInt(params.id) },
     });

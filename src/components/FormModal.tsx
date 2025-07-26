@@ -51,21 +51,9 @@ const deleteActionMap = {
   account: deleteAccount,
   transaction: deleteTransaction,
   studentFee: async (prevState: any, formData: FormData) => {
-    try {
-      const id = formData.get("id");
-      const response = await fetch(`/api/student-fees/${id}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        return { ...prevState, error: true, message: error.message };
-      }
-
-      return { ...prevState, success: true };
-    } catch (error) {
-      return { ...prevState, error: true, message: "An error occurred" };
-    }
+    // This is handled by the DeleteStudentFeeForm component
+    // which includes password verification
+    return prevState;
   },
 };
 
@@ -121,17 +109,19 @@ const FormModal = ({
 
       const deleteId = id || data?.id;
 
+      // Use special DeleteStudentFeeForm for studentFee deletions
+      if (table === "studentFee") {
+        return <DeleteStudentFeeForm id={deleteId} setOpen={setOpen} />;
+      }
+
       return (
         <form action={formAction} className="p-4 flex flex-col gap-4">
           <input type="text | number" name="id" value={deleteId} hidden />
           <span className="text-center font-medium">
-            {table === "studentFee" 
-              ? "Are you sure you want to reverse this payment? This action cannot be undone."
-              : "All data will be lost. Are you sure you want to delete this " + table + "?"
-            }
+            All data will be lost. Are you sure you want to delete this {table}?
           </span>
           <button className="bg-red-700 text-white py-2 px-4 rounded-md border-none w-max self-center">
-            {table === "studentFee" ? "Reverse Payment" : "Delete"}
+            Delete
           </button>
         </form>
       );
@@ -288,6 +278,9 @@ const AccountForm = dynamic(() => import("./forms/AccountForm"), {
   loading: () => <h1>Loading...</h1>,
 });
 const TransactionForm = dynamic(() => import("./forms/TransactionForm"), {
+  loading: () => <h1>Loading...</h1>,
+});
+const DeleteStudentFeeForm = dynamic(() => import("./forms/DeleteStudentFeeForm"), {
   loading: () => <h1>Loading...</h1>,
 });
 

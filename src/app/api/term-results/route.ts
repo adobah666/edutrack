@@ -57,6 +57,31 @@ export async function GET(request: Request) {
             term: term as any,
           },
         },
+        gradingScheme: {
+          include: {
+            grades: {
+              orderBy: {
+                order: 'asc',
+              },
+            },
+          },
+        },
+        school: {
+          select: {
+            gradingSchemes: {
+              where: {
+                isDefault: true,
+              },
+              include: {
+                grades: {
+                  orderBy: {
+                    order: 'asc',
+                  },
+                },
+              },
+            },
+          },
+        },
       },
     });
 
@@ -176,17 +201,37 @@ export async function GET(request: Request) {
       // If a student only has exams (70% weight), their max possible score is 70%
       // If they have no grades at all, mark as ungraded
 
-      // Determine grade and display logic
+      // Determine effective grading scheme (subject-specific or school default)
+      const effectiveGradingScheme = subject.gradingScheme || subject.school.gradingSchemes[0];
+
+      // Determine grade using custom grading scheme
       const getGrade = (percentage: number, hasGrades: boolean) => {
         if (!hasGrades) return 'Not Graded';
-        if (percentage >= 90) return 'A+';
-        if (percentage >= 80) return 'A';
-        if (percentage >= 70) return 'B+';
-        if (percentage >= 60) return 'B';
-        if (percentage >= 50) return 'C+';
-        if (percentage >= 40) return 'C';
-        if (percentage >= 30) return 'D';
-        return 'F';
+        
+        if (!effectiveGradingScheme || !effectiveGradingScheme.grades.length) {
+          // Fallback to hardcoded grades if no scheme is available
+          if (percentage >= 90) return 'A+';
+          if (percentage >= 80) return 'A';
+          if (percentage >= 70) return 'B+';
+          if (percentage >= 60) return 'B';
+          if (percentage >= 50) return 'C+';
+          if (percentage >= 40) return 'C';
+          if (percentage >= 30) return 'D';
+          return 'F';
+        }
+
+        // Use custom grading scheme
+        for (const grade of effectiveGradingScheme.grades) {
+          if (percentage >= grade.minPercentage && percentage <= grade.maxPercentage) {
+            return grade.grade;
+          }
+        }
+
+        // If no grade matches, return the lowest grade
+        const lowestGrade = effectiveGradingScheme.grades.reduce((lowest, current) => 
+          current.order > lowest.order ? current : lowest
+        );
+        return lowestGrade.grade;
       };
 
       // Determine what to show for final percentage

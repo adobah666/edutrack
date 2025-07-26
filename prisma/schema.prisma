@@ -42,6 +42,7 @@ model School {
   transactions Transaction[]
   budgets Budget[]
   budgetItems BudgetItem[]
+  gradingSchemes GradingScheme[]
 }
 
 model Admin {
@@ -159,12 +160,14 @@ model Subject {
   schoolId        String
   assignmentWeight Float       @default(0.3) // 30% for assignments (general default)
   examWeight      Float       @default(0.7) // 70% for exams (general default)
+  gradingSchemeId Int?         // Optional custom grading scheme
   assignments     Assignment[]
   exams           Exam[]
   lessons         Lesson[]
   school          School       @relation(fields: [schoolId], references: [id])
   teachers        Teacher[]    @relation("SubjectToTeacher")
   termWeights     SubjectTermWeight[]
+  gradingScheme   GradingScheme? @relation("SubjectGradingScheme", fields: [gradingSchemeId], references: [id])
   
   @@unique([name, schoolId])
 }
@@ -178,6 +181,37 @@ model SubjectTermWeight {
   subject         Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   
   @@unique([subjectId, term]) // Ensure one weight config per subject per term
+}
+
+model GradingScheme {
+  id          Int     @id @default(autoincrement())
+  name        String  // e.g., "Letter Grades", "Numeric Scale", "Custom Scale"
+  description String? // Optional description
+  schoolId    String
+  isDefault   Boolean @default(false) // One default scheme per school
+  createdBy   String  // User ID who created it
+  createdAt   DateTime @default(now())
+  
+  school      School  @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  grades      GradeScale[]
+  subjects    Subject[] @relation("SubjectGradingScheme")
+  
+  @@unique([schoolId, name]) // Unique scheme names per school
+}
+
+model GradeScale {
+  id              Int     @id @default(autoincrement())
+  gradingSchemeId Int
+  grade           String  // e.g., "A+", "B", "1", "9", "Excellent"
+  minPercentage   Float   // Minimum percentage for this grade
+  maxPercentage   Float   // Maximum percentage for this grade (usually 100 for highest)
+  description     String? // Optional description like "Excellent", "Good", "Needs Improvement"
+  color           String? // Optional color for UI display
+  order           Int     // Display order (1 = highest grade, 2 = second highest, etc.)
+  
+  gradingScheme   GradingScheme @relation(fields: [gradingSchemeId], references: [id], onDelete: Cascade)
+  
+  @@unique([gradingSchemeId, grade]) // Unique grades per scheme
 }
 
 model Lesson {

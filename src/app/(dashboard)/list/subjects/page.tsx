@@ -4,6 +4,8 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import SubjectWeightConfig from "@/components/SubjectWeightConfig";
 import TermSpecificWeightConfig from "@/components/TermSpecificWeightConfig";
+import GradingSchemeManager from "@/components/GradingSchemeManager";
+import SubjectGradingSchemeAssignment from "@/components/SubjectGradingSchemeAssignment";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma, Subject, Teacher } from "@prisma/client";
@@ -137,11 +139,13 @@ const SubjectListPage = async ({
         <Pagination page={p} count={count} />
       </div>
 
-      {/* WEIGHT CONFIGURATION - Only show for admin and teacher */}
+      {/* CONFIGURATION SECTIONS - Only show for admin and teacher */}
       {(role === "admin" || role === "teacher") && data.length > 0 && (
         <>
           <SubjectWeightConfig subjects={data} />
           <TermSpecificWeightConfig subjects={data} />
+          <GradingSchemeManager />
+          <SubjectGradingSchemeAssignment subjects={data} />
         </>
       )}
     </div>

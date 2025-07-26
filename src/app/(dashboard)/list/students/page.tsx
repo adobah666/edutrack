@@ -4,6 +4,7 @@ import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
 import ClassFilter from "@/components/ClassFilter";
 import SortButton from "@/components/SortButton";
+import StudentPromotion from "@/components/StudentPromotion";
 
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
@@ -317,6 +318,13 @@ const StudentListPage = async ({
       <div className="mt-6">
         <Pagination page={p} count={count} />
       </div>
+
+      {/* Student Promotion Section - Only for Admins */}
+      {role === "admin" && (
+        <div className="mt-8">
+          <StudentPromotion />
+        </div>
+      )}
     </div>
   );
 };

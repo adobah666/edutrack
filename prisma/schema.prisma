@@ -73,7 +73,7 @@ model Student {
   sex         UserSex
   createdAt   DateTime     @default(now())
   parentId    String?
-  classId     Int
+  classId     Int          // Current class
   gradeId     Int
   schoolId    String
   birthday    DateTime
@@ -84,6 +84,27 @@ model Student {
   parent      Parent?      @relation(fields: [parentId], references: [id])
   school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
+  classHistory StudentClassHistory[]
+}
+
+model StudentClassHistory {
+  id          Int      @id @default(autoincrement())
+  studentId   String
+  classId     Int
+  gradeId     Int
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  academicYear String  // e.g., "2023-2024", "2024-2025"
+  isActive    Boolean  @default(true)
+  promotedBy  String?  // User ID who promoted the student
+  promotedAt  DateTime?
+  notes       String?  // Optional notes about the promotion
+  
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  class       Class    @relation(fields: [classId], references: [id])
+  grade       Grade    @relation(fields: [gradeId], references: [id])
+  
+  @@unique([studentId, classId, academicYear]) // Prevent duplicate entries
 }
 
 model Teacher {
@@ -130,6 +151,7 @@ model Grade {
   name     String    @unique
   classess Class[]
   students Student[]
+  studentHistory StudentClassHistory[]
 }
 
 model Class {
@@ -150,6 +172,7 @@ model Class {
   exams         Exam[]
   lessons       Lesson[]
   students      Student[]
+  studentHistory StudentClassHistory[]
   
   @@unique([name, schoolId])
 }

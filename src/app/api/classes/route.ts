@@ -8,7 +8,8 @@ export async function GET() {
     const { sessionClaims } = auth();
     const role = (sessionClaims?.metadata as { role?: string })?.role;
 
-    if (role !== 'admin') {
+    // Only admins and teachers can access classes
+    if (!['admin', 'teacher'].includes(role || '')) {
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized' }),
         { status: 403 }
@@ -21,7 +22,9 @@ export async function GET() {
     const classes = await prisma.class.findMany({
       where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
       orderBy: { name: 'asc' },
-      select: { id: true, name: true },
+      include: {
+        grade: true,
+      },
     });
 
     return NextResponse.json(classes);

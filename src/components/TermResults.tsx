@@ -27,6 +27,8 @@ interface StudentResult {
   assignmentCount: number;
   examCount: number;
   breakdown: BreakdownItem[];
+  hasAnyGrades?: boolean;
+  isPartialGrading?: boolean;
 }
 
 interface TermResultsData {
@@ -41,6 +43,7 @@ interface TermResultsData {
     assignments: string;
     exams: string;
   };
+  isUsingTermSpecificWeights?: boolean;
   results: StudentResult[];
 }
 
@@ -225,12 +228,28 @@ const TermResults = ({ classes, subjects }: TermResultsProps) => {
                 </div>
               </div>
 
+              {/* Weight Configuration Info */}
+              {results.isUsingTermSpecificWeights && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-blue-600">⚙️</span>
+                    <h4 className="font-medium text-blue-900">Term-Specific Weights Active</h4>
+                  </div>
+                  <p className="text-sm text-blue-700">
+                    This term is using custom weights instead of the general subject weights.
+                  </p>
+                </div>
+              )}
+
               <div className="mt-4 p-3 bg-gray-50 rounded-lg">
                 <h4 className="font-medium text-gray-900 mb-2">How Grading Works:</h4>
                 <div className="text-sm text-gray-600 space-y-1">
                   <div>• <strong>Assignment Average:</strong> All assignments are averaged together</div>
                   <div>• <strong>Exam Average:</strong> All exams are averaged together</div>
                   <div>• <strong>Final Grade:</strong> (Assignment Avg × {results.categoryWeights.assignments}) + (Exam Avg × {results.categoryWeights.exams})</div>
+                  {results.isUsingTermSpecificWeights && (
+                    <div className="text-blue-600 font-medium">• Using term-specific weights for this calculation</div>
+                  )}
                 </div>
               </div>
             </div>
@@ -270,7 +289,7 @@ const TermResults = ({ classes, subjects }: TermResultsProps) => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="text-sm text-gray-900">
-                              {result.finalPercentage}%
+                              {result.finalPercentage}
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
@@ -342,11 +361,28 @@ const TermResults = ({ classes, subjects }: TermResultsProps) => {
                                 <div className="bg-gray-100 p-3 rounded-lg">
                                   <h5 className="font-medium text-gray-900 mb-2">Final Grade Calculation:</h5>
                                   <div className="text-sm text-gray-700 space-y-1">
-                                    <div>Assignment Average: {result.assignmentAverage}% × {results.categoryWeights.assignments} = {(parseFloat(result.assignmentAverage) * results.assignmentWeight).toFixed(1)}%</div>
-                                    <div>Exam Average: {result.examAverage}% × {results.categoryWeights.exams} = {(parseFloat(result.examAverage) * results.examWeight).toFixed(1)}%</div>
-                                    <div className="border-t pt-1 mt-2 font-medium">
-                                      Final Grade: {result.finalPercentage}% = {result.grade}
-                                    </div>
+                                    {result.hasAnyGrades ? (
+                                      <>
+                                        {result.assignmentCount > 0 && (
+                                          <div>Assignment Average: {result.assignmentAverage}% × {results.categoryWeights.assignments} = {(parseFloat(result.assignmentAverage) * results.assignmentWeight).toFixed(1)}%</div>
+                                        )}
+                                        {result.examCount > 0 && (
+                                          <div>Exam Average: {result.examAverage}% × {results.categoryWeights.exams} = {(parseFloat(result.examAverage) * results.examWeight).toFixed(1)}%</div>
+                                        )}
+                                        {result.isPartialGrading && (
+                                          <div className="text-orange-600 font-medium">
+                                            ⚠️ Partial grading: Only {result.assignmentCount > 0 ? 'assignments' : 'exams'} have been graded
+                                          </div>
+                                        )}
+                                        <div className="border-t pt-1 mt-2 font-medium">
+                                          Final Grade: {result.finalPercentage} = {result.grade}
+                                        </div>
+                                      </>
+                                    ) : (
+                                      <div className="text-gray-500 italic">
+                                        No grades available for calculation
+                                      </div>
+                                    )}
                                   </div>
                                 </div>
                               </div>

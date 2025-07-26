@@ -52,6 +52,11 @@ export async function GET(request: Request) {
         name: true,
         assignmentWeight: true,
         examWeight: true,
+        termWeights: {
+          where: {
+            term: term as any,
+          },
+        },
       },
     });
 
@@ -61,6 +66,11 @@ export async function GET(request: Request) {
         { status: 404 }
       );
     }
+
+    // Determine effective weights (term-specific or general)
+    const termWeight = subject.termWeights[0]; // Should be only one for the specific term
+    const effectiveAssignmentWeight = termWeight?.assignmentWeight ?? subject.assignmentWeight;
+    const effectiveExamWeight = termWeight?.examWeight ?? subject.examWeight;
 
     // Get all exams for this subject, class, and term
     const exams = await prisma.exam.findMany({
@@ -117,7 +127,7 @@ export async function GET(request: Request) {
             score: result.score,
             maxPoints: assignment.maxPoints,
             percentage: percentage.toFixed(1),
-            categoryWeight: subject.assignmentWeight,
+            categoryWeight: effectiveAssignmentWeight,
           });
         }
       });
@@ -139,7 +149,7 @@ export async function GET(request: Request) {
             score: result.score,
             maxPoints: exam.maxPoints,
             percentage: percentage.toFixed(1),
-            categoryWeight: subject.examWeight,
+            categoryWeight: effectiveExamWeight,
           });
         }
       });
@@ -148,27 +158,27 @@ export async function GET(request: Request) {
       const assignmentAverage = assignmentCount > 0 ? assignmentTotal / assignmentCount : 0;
       const examAverage = examCount > 0 ? examTotal / examCount : 0;
 
-      // Calculate final weighted percentage
+      // Calculate final weighted percentage (no scaling - respect actual weights)
       let finalPercentage = 0;
-      let totalCategoryWeight = 0;
+      let hasAnyGrades = false;
 
       if (assignmentCount > 0) {
-        finalPercentage += assignmentAverage * subject.assignmentWeight;
-        totalCategoryWeight += subject.assignmentWeight;
+        finalPercentage += assignmentAverage * effectiveAssignmentWeight;
+        hasAnyGrades = true;
       }
 
       if (examCount > 0) {
-        finalPercentage += examAverage * subject.examWeight;
-        totalCategoryWeight += subject.examWeight;
+        finalPercentage += examAverage * effectiveExamWeight;
+        hasAnyGrades = true;
       }
 
-      // Normalize if not all categories have scores
-      if (totalCategoryWeight > 0 && totalCategoryWeight < 1) {
-        finalPercentage = finalPercentage / totalCategoryWeight;
-      }
+      // Don't scale up partial grades - respect the actual weight system
+      // If a student only has exams (70% weight), their max possible score is 70%
+      // If they have no grades at all, mark as ungraded
 
-      // Determine grade based on percentage
-      const getGrade = (percentage: number) => {
+      // Determine grade and display logic
+      const getGrade = (percentage: number, hasGrades: boolean) => {
+        if (!hasGrades) return 'Not Graded';
         if (percentage >= 90) return 'A+';
         if (percentage >= 80) return 'A';
         if (percentage >= 70) return 'B+';
@@ -179,19 +189,44 @@ export async function GET(request: Request) {
         return 'F';
       };
 
+      // Determine what to show for final percentage
+      const getFinalPercentageDisplay = () => {
+        if (!hasAnyGrades) return 'Not Graded';
+        
+        // Show the actual weighted percentage (no scaling)
+        // Add indicator if it's partial grading
+        const percentageStr = finalPercentage.toFixed(1) + '%';
+        
+        // Check if this is partial grading (missing either assignments or exams)
+        const missingAssignments = assignments.length > 0 && assignmentCount === 0;
+        const missingExams = exams.length > 0 && examCount === 0;
+        
+        if (missingAssignments && missingExams) {
+          return 'Not Graded';
+        } else if (missingAssignments) {
+          return `${percentageStr} (No assignments)`;
+        } else if (missingExams) {
+          return `${percentageStr} (No exams)`;
+        }
+        
+        return percentageStr;
+      };
+
       return {
         student: {
           id: student.id,
           name: student.name,
           surname: student.surname,
         },
-        finalPercentage: finalPercentage.toFixed(1),
-        grade: getGrade(finalPercentage),
-        assignmentAverage: assignmentAverage.toFixed(1),
-        examAverage: examAverage.toFixed(1),
+        finalPercentage: getFinalPercentageDisplay(),
+        grade: getGrade(finalPercentage, hasAnyGrades),
+        assignmentAverage: assignmentCount > 0 ? assignmentAverage.toFixed(1) : 'No grades',
+        examAverage: examCount > 0 ? examAverage.toFixed(1) : 'No grades',
         assignmentCount,
         examCount,
         breakdown,
+        hasAnyGrades,
+        isPartialGrading: hasAnyGrades && ((assignments.length > 0 && assignmentCount === 0) || (exams.length > 0 && examCount === 0)),
       };
     });
 
@@ -207,12 +242,13 @@ export async function GET(request: Request) {
       term,
       totalExams: exams.length,
       totalAssignments: assignments.length,
-      assignmentWeight: subject.assignmentWeight,
-      examWeight: subject.examWeight,
+      assignmentWeight: effectiveAssignmentWeight,
+      examWeight: effectiveExamWeight,
       categoryWeights: {
-        assignments: `${(subject.assignmentWeight * 100).toFixed(0)}%`,
-        exams: `${(subject.examWeight * 100).toFixed(0)}%`,
+        assignments: `${(effectiveAssignmentWeight * 100).toFixed(0)}%`,
+        exams: `${(effectiveExamWeight * 100).toFixed(0)}%`,
       },
+      isUsingTermSpecificWeights: !!termWeight,
       results: studentResults,
     });
 

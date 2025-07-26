@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { getSchoolFilter } from '@/lib/school-context';
+import { checkResultApproval } from '@/lib/result-approval';
 
 export async function GET(request: Request) {
   try {
@@ -69,6 +70,30 @@ export async function GET(request: Request) {
         { error: 'Class not found' },
         { status: 404 }
       );
+    }
+
+    // Check if results are approved for students and parents
+    if (['student', 'parent'].includes(role) && schoolFilter.schoolId) {
+      const isApproved = await checkResultApproval(
+        parseInt(classId),
+        term,
+        schoolFilter.schoolId
+      );
+
+      if (!isApproved) {
+        return NextResponse.json({
+          studentName: `${student.name} ${student.surname}`,
+          className: requestedClass.name,
+          term,
+          subjects: [],
+          overallAverage: 'Not Available',
+          overallGrade: 'Not Available',
+          totalSubjects: 0,
+          gradedSubjects: 0,
+          isApprovalPending: true,
+          message: `Results for ${term} term are not yet approved for viewing. Please check back later or contact your teacher.`,
+        });
+      }
     }
 
     // Get all subjects for this class

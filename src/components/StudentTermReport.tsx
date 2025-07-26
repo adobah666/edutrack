@@ -28,6 +28,8 @@ interface StudentTermReportData {
   overallGrade: string;
   totalSubjects: number;
   gradedSubjects: number;
+  isApprovalPending?: boolean;
+  message?: string;
 }
 
 interface StudentTermReportProps {
@@ -218,7 +220,28 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
             </div>
           </div>
 
-          {/* Overall Performance */}
+          {/* Results Approval Pending Message */}
+          {reportData.isApprovalPending ? (
+            <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-8 border border-yellow-200 text-center">
+              <div className="mb-4">
+                <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center">
+                  <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+              </div>
+              <h3 className="text-xl font-semibold text-yellow-800 mb-2">Results Not Yet Available</h3>
+              <p className="text-yellow-700 mb-4">
+                {reportData.message || `Results for ${TERMS.find(t => t.value === selectedTerm)?.label} are not yet approved for viewing.`}
+              </p>
+              <div className="text-sm text-yellow-600 bg-yellow-100 rounded-lg p-3 inline-block">
+                <p className="font-medium">What does this mean?</p>
+                <p className="mt-1">Your teacher is still reviewing and finalizing the results. Once approved, you'll be able to view your complete term report here.</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Overall Performance */}
           <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-6 border border-green-200">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Overall Term Performance</h3>
@@ -340,6 +363,8 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
               </div>
             </div>
           </div>
+            </>
+          )}
         </div>
       ) : (
         <div className="text-center py-12">

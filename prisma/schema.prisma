@@ -43,6 +43,7 @@ model School {
   budgets Budget[]
   budgetItems BudgetItem[]
   gradingSchemes GradingScheme[]
+  resultApprovals ResultApproval[]
 }
 
 model Admin {
@@ -173,6 +174,7 @@ model Class {
   lessons       Lesson[]
   students      Student[]
   studentHistory StudentClassHistory[]
+  resultApprovals ResultApproval[]
   
   @@unique([name, schoolId])
 }
@@ -235,6 +237,24 @@ model GradeScale {
   gradingScheme   GradingScheme @relation(fields: [gradingSchemeId], references: [id], onDelete: Cascade)
   
   @@unique([gradingSchemeId, grade]) // Unique grades per scheme
+}
+
+model ResultApproval {
+  id          Int      @id @default(autoincrement())
+  classId     Int
+  term        Term
+  schoolId    String
+  isApproved  Boolean  @default(false)
+  approvedBy  String?  // Admin user ID who approved
+  approvedAt  DateTime?
+  notes       String?  // Optional notes about the approval
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  class       Class    @relation(fields: [classId], references: [id], onDelete: Cascade)
+  school      School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  
+  @@unique([classId, term, schoolId]) // One approval per class per term per school
 }
 
 model Lesson {

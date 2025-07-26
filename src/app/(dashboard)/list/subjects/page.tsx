@@ -2,6 +2,7 @@ import FormContainer from "@/components/FormContainer";
 import Pagination from "@/components/Pagination";
 import Table from "@/components/Table";
 import TableSearch from "@/components/TableSearch";
+import SubjectWeightConfig from "@/components/SubjectWeightConfig";
 import prisma from "@/lib/prisma";
 import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Prisma, Subject, Teacher } from "@prisma/client";
@@ -101,36 +102,44 @@ const SubjectListPage = async ({
   }));
 
   return (
-    <div className="bg-white p-4 rounded-md flex-1 m-4 mt-0">
-      {/* TOP */}
-      <div className="flex items-center justify-between">
-        <h1 className="hidden md:block text-lg font-semibold">All Subjects</h1>
-        <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
-          <div className="w-full md:w-auto">
-            <TableSearch />
-            <p className="text-xs text-gray-500 mt-1">Search by subject or teacher name</p>
-          </div>
-          <div className="flex items-center gap-4 self-end">
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/filter.png" alt="" width={14} height={14} />
-            </button>
-            <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
-              <Image src="/sort.png" alt="" width={14} height={14} />
-            </button>
-            {role === "admin" && (
-              <FormContainer table="subject" type="create" />
-            )}
+    <div className="flex flex-col gap-4 m-4 mt-0">
+      {/* SUBJECTS LIST */}
+      <div className="bg-white p-4 rounded-md flex-1">
+        {/* TOP */}
+        <div className="flex items-center justify-between">
+          <h1 className="hidden md:block text-lg font-semibold">All Subjects</h1>
+          <div className="flex flex-col md:flex-row items-center gap-4 w-full md:w-auto">
+            <div className="w-full md:w-auto">
+              <TableSearch />
+              <p className="text-xs text-gray-500 mt-1">Search by subject or teacher name</p>
+            </div>
+            <div className="flex items-center gap-4 self-end">
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                <Image src="/filter.png" alt="" width={14} height={14} />
+              </button>
+              <button className="w-8 h-8 flex items-center justify-center rounded-full bg-lamaYellow">
+                <Image src="/sort.png" alt="" width={14} height={14} />
+              </button>
+              {role === "admin" && (
+                <FormContainer table="subject" type="create" />
+              )}
+            </div>
           </div>
         </div>
+        {/* LIST */}
+        <Table 
+          columns={columns} 
+          data={tableData}
+          emptyMessage="No subjects found" 
+        />
+        {/* PAGINATION */}
+        <Pagination page={p} count={count} />
       </div>
-      {/* LIST */}
-      <Table 
-        columns={columns} 
-        data={tableData}
-        emptyMessage="No subjects found" 
-      />
-      {/* PAGINATION */}
-      <Pagination page={p} count={count} />
+
+      {/* WEIGHT CONFIGURATION - Only show for admin and teacher */}
+      {(role === "admin" || role === "teacher") && data.length > 0 && (
+        <SubjectWeightConfig subjects={data} />
+      )}
     </div>
   );
 };

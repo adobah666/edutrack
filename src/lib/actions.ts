@@ -598,7 +598,7 @@ export const updateTeacher = async (
     });
 
     // Update teacher-subject-class assignments
-    if (data.teacherSubjectClasses !== undefined) {
+    if (data.teacherSubjectClasses !== undefined && data.id) {
       // First, delete existing assignments for this teacher
       await prisma.teacherSubjectClass.deleteMany({
         where: { teacherId: data.id },
@@ -613,7 +613,7 @@ export const updateTeacher = async (
         if (validAssignments.length > 0) {
           await prisma.teacherSubjectClass.createMany({
             data: validAssignments.map((assignment) => ({
-              teacherId: data.id,
+              teacherId: data.id!,
               subjectId: assignment.subjectId,
               classId: assignment.classId,
             })),
@@ -979,9 +979,10 @@ export const createExam = async (
       const classIds = data.classIds && data.classIds.length > 0 ? data.classIds : [data.classId];
       
       // Create exam-class relationships
-      if (classIds.length > 0) {
+      const validClassIds = classIds.filter((classId): classId is number => classId !== undefined);
+      if (validClassIds.length > 0) {
         await tx.examClass.createMany({
-          data: classIds.map(classId => ({
+          data: validClassIds.map(classId => ({
             examId: exam.id,
             classId: classId,
           })),
@@ -991,7 +992,7 @@ export const createExam = async (
       // Get all current students in the selected classes
       const currentStudents = await tx.student.findMany({
         where: {
-          classId: { in: classIds },
+          classId: { in: validClassIds },
           schoolId: schoolId,
         },
         select: {

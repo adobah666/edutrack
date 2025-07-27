@@ -94,7 +94,7 @@ const TermResults = ({ classes, subjects }: TermResultsProps) => {
 
   useEffect(() => {
     fetchResults();
-  }, [selectedClass, selectedSubject, selectedTerm]);
+  }, [selectedClass, selectedSubject, selectedTerm, fetchResults]);
 
   const getGradeColor = (grade: string) => {
     switch (grade) {

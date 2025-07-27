@@ -158,7 +158,7 @@ const ClassForm = ({
       </div>
       {state.error && (
         <span className="text-red-500">
-          {state.message || "Please make sure all required fields are filled, including selecting a supervisor."}
+          {"Please make sure all required fields are filled, including selecting a supervisor."}
         </span>
       )}
       <button className="bg-blue-400 text-white p-2 rounded-md">

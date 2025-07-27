@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 
 interface Class {
@@ -37,16 +37,6 @@ const ResultApprovalManager = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<number | null>(null);
 
-  useEffect(() => {
-    loadClasses();
-  }, []);
-
-  useEffect(() => {
-    if (selectedTerm) {
-      loadApprovals();
-    }
-  }, [selectedTerm]);
-
   const loadClasses = async () => {
     try {
       const response = await fetch('/api/classes');
@@ -60,7 +50,7 @@ const ResultApprovalManager = () => {
     }
   };
 
-  const loadApprovals = async () => {
+  const loadApprovals = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/result-approvals?term=${selectedTerm}`);
@@ -74,7 +64,17 @@ const ResultApprovalManager = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedTerm]);
+
+  useEffect(() => {
+    loadClasses();
+  }, []);
+
+  useEffect(() => {
+    if (selectedTerm) {
+      loadApprovals();
+    }
+  }, [selectedTerm, loadApprovals]);
 
   const handleApprovalToggle = async (classId: number, currentStatus: boolean, notes?: string) => {
     setIsUpdating(classId);
@@ -240,7 +240,7 @@ const ResultApprovalManager = () => {
             </p>
             <p className="mt-1">
               Students and parents can only view results for approved classes. 
-              Unapproved results will show a "not yet approved" message.
+              Unapproved results will show a &quot;not yet approved&quot; message.
             </p>
           </div>
         </div>

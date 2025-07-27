@@ -179,7 +179,7 @@ const StudentFeesClient = ({ student, fees }: StudentFeesClientProps) => {
                       allowPartialPayment={true}
                     />
                     <div className="text-xs text-gray-500 text-center">
-                      Pay full amount or click "Custom Amount" for partial payment
+                      Pay full amount or click &quot;Custom Amount&quot; for partial payment
                     </div>
                   </>
                 )}

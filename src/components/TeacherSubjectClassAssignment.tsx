@@ -80,7 +80,7 @@ const TeacherSubjectClassAssignment = ({
       
       {assignments.length === 0 ? (
         <div className="text-xs text-gray-400 italic p-4 border border-dashed border-gray-300 rounded-md text-center">
-          No assignments yet. Click "Add Assignment" to assign subjects to classes.
+          No assignments yet. Click &quot;Add Assignment&quot; to assign subjects to classes.
         </div>
       ) : (
         <div className="space-y-3 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
@@ -138,7 +138,7 @@ const TeacherSubjectClassAssignment = ({
       )}
       
       <p className="text-xs text-gray-400">
-        Assign specific subjects to specific classes. For example: "Math to Class 1A" or "English to Class 2B".
+        Assign specific subjects to specific classes. For example: &quot;Math to Class 1A&quot; or &quot;English to Class 2B&quot;.
       </p>
     </div>
   );

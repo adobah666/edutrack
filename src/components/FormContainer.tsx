@@ -125,7 +125,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         ]);
         
         // If editing, fetch existing teacher-subject-class assignments
-        let existingAssignments = [];
+        let existingAssignments: any[] = [];
         if (id) {
           const teacher = await prisma.teacher.findUnique({
             where: { id: id as string },

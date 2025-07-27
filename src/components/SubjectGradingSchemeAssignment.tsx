@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 
 interface Subject {
@@ -33,11 +33,6 @@ const SubjectGradingSchemeAssignment = ({ subjects }: SubjectGradingSchemeAssign
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
-    loadGradingSchemes();
-    initializeAssignments();
-  }, [subjects]);
-
   const loadGradingSchemes = async () => {
     try {
       const response = await fetch('/api/grading-schemes');
@@ -52,13 +47,18 @@ const SubjectGradingSchemeAssignment = ({ subjects }: SubjectGradingSchemeAssign
     }
   };
 
-  const initializeAssignments = () => {
+  const initializeAssignments = useCallback(() => {
     const initialAssignments: { [subjectId: number]: number | null } = {};
     subjects.forEach(subject => {
       initialAssignments[subject.id] = subject.gradingSchemeId || null;
     });
     setAssignments(initialAssignments);
-  };
+  }, [subjects]);
+
+  useEffect(() => {
+    loadGradingSchemes();
+    initializeAssignments();
+  }, [subjects, initializeAssignments]);
 
   const handleAssignmentChange = (subjectId: number, schemeId: string) => {
     setAssignments(prev => ({

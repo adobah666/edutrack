@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 
 interface SubjectResult {
@@ -68,19 +68,7 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Load class history on component mount
-  useEffect(() => {
-    fetchClassHistory();
-  }, [studentId]);
-
-  // Fetch term report when term or class changes
-  useEffect(() => {
-    if (selectedTerm && selectedClassId) {
-      fetchTermReport();
-    }
-  }, [selectedTerm, selectedClassId, studentId]);
-
-  const fetchClassHistory = async () => {
+  const fetchClassHistory = useCallback(async () => {
     setIsLoadingHistory(true);
     try {
       const response = await fetch(`/api/students/${studentId}/class-history`);
@@ -97,9 +85,9 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
     } finally {
       setIsLoadingHistory(false);
     }
-  };
+  }, [studentId]);
 
-  const fetchTermReport = async () => {
+  const fetchTermReport = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch(`/api/student-term-report?studentId=${studentId}&classId=${selectedClassId}&term=${selectedTerm}`);
@@ -116,7 +104,19 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [studentId, selectedClassId, selectedTerm]);
+
+  // Load class history on component mount
+  useEffect(() => {
+    fetchClassHistory();
+  }, [fetchClassHistory]);
+
+  // Fetch term report when term or class changes
+  useEffect(() => {
+    if (selectedTerm && selectedClassId) {
+      fetchTermReport();
+    }
+  }, [selectedTerm, selectedClassId, fetchTermReport]);
 
   const getGradeColor = (grade: string) => {
     if (grade === 'Not Graded') return 'text-gray-500';
@@ -174,7 +174,7 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
             </select>
           )}
           <p className="text-xs text-gray-500 mt-1">
-            View results from any class you've been in
+            View results from any class you&apos;ve been in
           </p>
         </div>
 
@@ -236,7 +236,7 @@ const StudentTermReport = ({ studentId, classId }: StudentTermReportProps) => {
               </p>
               <div className="text-sm text-yellow-600 bg-yellow-100 rounded-lg p-3 inline-block">
                 <p className="font-medium">What does this mean?</p>
-                <p className="mt-1">Your teacher is still reviewing and finalizing the results. Once approved, you'll be able to view your complete term report here.</p>
+                <p className="mt-1">Your teacher is still reviewing and finalizing the results. Once approved, you&apos;ll be able to view your complete term report here.</p>
               </div>
             </div>
           ) : (

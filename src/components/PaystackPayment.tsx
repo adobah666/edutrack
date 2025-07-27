@@ -205,7 +205,7 @@ const PaystackPayment = ({
       </div>
       {allowPartialPayment && (
         <div className="text-xs text-gray-500 text-center">
-          Click "Custom Amount" to pay a different amount
+          Click &quot;Custom Amount&quot; to pay a different amount
         </div>
       )}
     </div>

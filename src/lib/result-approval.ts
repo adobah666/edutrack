@@ -6,7 +6,7 @@ export async function checkResultApproval(classId: number, term: string, schoolI
       where: {
         classId_term_schoolId: {
           classId: classId,
-          term: term,
+          term: term as any,
           schoolId: schoolId,
         },
       },

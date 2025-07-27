@@ -37,13 +37,13 @@ interface Parent {
 
 interface ParentFeesClientProps {
   parent: Parent;
-  children: Child[];
+  studentChildren: Child[];
 }
 
-const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
+const ParentFeesClient = ({ parent, studentChildren }: ParentFeesClientProps) => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [selectedChild, setSelectedChild] = useState<string | null>(
-    children.length > 0 ? children[0].id : null
+    studentChildren.length > 0 ? studentChildren[0].id : null
   );
 
   const handlePaymentSuccess = () => {
@@ -64,10 +64,10 @@ const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
     return new Date(dueDate) < new Date();
   };
 
-  const currentChild = children.find(child => child.id === selectedChild);
+  const currentChild = studentChildren.find(child => child.id === selectedChild);
 
   // Calculate totals for all children
-  const grandTotals = children.reduce((totals, child) => {
+  const grandTotals = studentChildren.reduce((totals, child) => {
     const childTotals = child.fees.reduce((childSum, fee) => ({
       totalFees: childSum.totalFees + fee.totalAmount,
       totalPaid: childSum.totalPaid + fee.totalPaid,
@@ -81,7 +81,7 @@ const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
     };
   }, { totalFees: 0, totalPaid: 0, totalOutstanding: 0 });
 
-  if (children.length === 0) {
+  if (studentChildren.length === 0) {
     return (
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
         <div className="text-gray-500 mb-2">No children found</div>
@@ -138,7 +138,7 @@ const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
       <div className="bg-white rounded-xl shadow-sm border border-gray-200">
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6" aria-label="Tabs">
-            {children.map((child) => {
+            {studentChildren.map((child) => {
               const childOutstanding = child.fees.reduce((sum, fee) => sum + fee.remainingAmount, 0);
               return (
                 <button
@@ -286,7 +286,7 @@ const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
                             allowPartialPayment={true}
                           />
                           <div className="text-xs text-gray-500 text-center">
-                            Pay full amount or click "Custom Amount" for partial payment
+                            Pay full amount or click &quot;Custom Amount&quot; for partial payment
                           </div>
                         </>
                       )}
@@ -304,7 +304,7 @@ const ParentFeesClient = ({ parent, children }: ParentFeesClientProps) => {
                 <div className="text-center py-8">
                   <div className="text-gray-500 mb-2">No fees assigned</div>
                   <p className="text-sm text-gray-400">
-                    No fees have been assigned to this student's class yet.
+                    No fees have been assigned to this student&apos;s class yet.
                   </p>
                 </div>
               )}

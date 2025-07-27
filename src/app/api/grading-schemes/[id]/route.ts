@@ -42,7 +42,7 @@ export async function DELETE(
     const scheme = await prisma.gradingScheme.findFirst({
       where: {
         id: schemeId,
-        schoolId: schoolFilter.schoolId,
+        ...(schoolFilter.schoolId && { schoolId: schoolFilter.schoolId }),
       },
       include: {
         subjects: true, // Check if any subjects are using this scheme

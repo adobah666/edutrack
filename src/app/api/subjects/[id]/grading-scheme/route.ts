@@ -81,7 +81,7 @@ export async function POST(
       const scheme = await prisma.gradingScheme.findFirst({
         where: {
           id: parseInt(gradingSchemeId),
-          schoolId: schoolFilter.schoolId,
+          ...(schoolFilter.schoolId && { schoolId: schoolFilter.schoolId }),
         },
       });
 

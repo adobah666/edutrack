@@ -146,7 +146,10 @@ const SubjectListPage = async ({
           <SubjectWeightConfig subjects={data} />
           <TermSpecificWeightConfig subjects={data} />
           <GradingSchemeManager />
-          <SubjectGradingSchemeAssignment subjects={data} />
+          <SubjectGradingSchemeAssignment subjects={data.map(subject => ({
+            ...subject,
+            gradingSchemeId: subject.gradingSchemeId ?? undefined
+          }))} />
         </>
       )}
 

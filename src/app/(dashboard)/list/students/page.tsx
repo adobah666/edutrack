@@ -102,6 +102,9 @@ const StudentListPage = async ({
     prisma.student.groupBy({
       by: ['sex'],
       where: query,
+      orderBy: {
+        sex: 'asc',
+      },
       _count: {
         sex: true,
       },
@@ -128,8 +131,8 @@ const StudentListPage = async ({
     : rawData;
 
   // Calculate gender counts from the genderStats
-  const maleCount = genderStats.find(stat => stat.sex === 'MALE')?._count.sex || 0;
-  const femaleCount = genderStats.find(stat => stat.sex === 'FEMALE')?._count.sex || 0;
+  const maleCount = (genderStats?.find(stat => stat.sex === 'MALE')?._count as any)?.sex || 0;
+  const femaleCount = (genderStats?.find(stat => stat.sex === 'FEMALE')?._count as any)?.sex || 0;
 
   const columns = [
     {

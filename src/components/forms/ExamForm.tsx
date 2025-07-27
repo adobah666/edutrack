@@ -131,7 +131,6 @@ const ExamForm = ({
           register={register}
           error={errors?.maxPoints}
           type="number"
-          min="1"
         />
         {data && (
           <InputField

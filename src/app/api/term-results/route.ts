@@ -329,25 +329,9 @@ export async function POST(request: Request) {
       );
     }
 
-    if (examId) {
-      await prisma.exam.update({
-        where: { 
-          id: parseInt(examId),
-          ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
-        },
-        data: { weight: parseFloat(weight) },
-      });
-    }
-
-    if (assignmentId) {
-      await prisma.assignment.update({
-        where: { 
-          id: parseInt(assignmentId),
-          ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
-        },
-        data: { weight: parseFloat(weight) },
-      });
-    }
+    // Note: Weight functionality has been moved to Subject model
+    // Individual exams and assignments no longer have weight properties
+    // Weight is now handled at the subject level via assignmentWeight and examWeight
 
     return NextResponse.json({ success: true });
 

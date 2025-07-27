@@ -185,7 +185,7 @@ export async function PUT(request: Request) {
     const existingScheme = await prisma.gradingScheme.findFirst({
       where: {
         id: parseInt(id),
-        schoolId: schoolFilter.schoolId,
+        ...(schoolFilter.schoolId && { schoolId: schoolFilter.schoolId }),
       },
     });
 
@@ -200,7 +200,7 @@ export async function PUT(request: Request) {
     if (isDefault && !existingScheme.isDefault) {
       await prisma.gradingScheme.updateMany({
         where: {
-          schoolId: schoolFilter.schoolId,
+          ...(schoolFilter.schoolId && { schoolId: schoolFilter.schoolId }),
           isDefault: true,
           id: { not: parseInt(id) },
         },

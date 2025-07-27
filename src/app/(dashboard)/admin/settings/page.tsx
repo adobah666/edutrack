@@ -112,11 +112,11 @@ const AdminSettingsPage = async () => {
               <h3 className="font-medium text-gray-900 mb-2">Recording Manual Payments:</h3>
               <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600 ml-4">
                 <li>Navigate to the fees management page</li>
-                <li>Click "View Payments" for a specific fee</li>
-                <li>Click "Record Payment" button</li>
-                <li>Enter payment amount and click "Record Payment"</li>
+                <li>Click &quot;View Payments&quot; for a specific fee</li>
+                <li>Click &quot;Record Payment&quot; button</li>
+                <li>Enter payment amount and click &quot;Record Payment&quot;</li>
                 <li>Enter your personal admin account password when prompted</li>
-                <li>Click "Verify & Record Payment" to complete</li>
+                <li>Click &quot;Verify & Record Payment&quot; to complete</li>
               </ol>
             </div>
 
@@ -125,9 +125,9 @@ const AdminSettingsPage = async () => {
               <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600 ml-4">
                 <li>Navigate to the payment history</li>
                 <li>Click the delete/reverse button for a payment</li>
-                <li>Click "Reverse Payment" in the confirmation dialog</li>
+                <li>Click &quot;Reverse Payment&quot; in the confirmation dialog</li>
                 <li>Enter your personal admin account password when prompted</li>
-                <li>Click "Verify & Reverse Payment" to complete</li>
+                <li>Click &quot;Verify & Reverse Payment&quot; to complete</li>
               </ol>
             </div>
 

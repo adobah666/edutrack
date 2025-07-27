@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { UseFormRegister, FieldErrors } from "react-hook-form";
 import { TeacherSchema } from "@/lib/formValidationSchemas";
+import { toast } from "react-toastify";
 
 interface Subject {
   id: number;
@@ -74,7 +75,62 @@ const TeacherSubjectClassAssignment = ({
   const updateAssignment = (index: number, field: 'subjectId' | 'classId', value: number) => {
     const updated = [...assignments];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Check for duplicates after update
+    if (field === 'classId' && value > 0 && updated[index].subjectId > 0) {
+      const isDuplicate = updated.some((assignment, i) => 
+        i !== index && 
+        assignment.subjectId === updated[index].subjectId && 
+        assignment.classId === updated[index].classId
+      );
+      
+      if (isDuplicate) {
+        toast.error('This subject-class combination already exists!');
+        return; // Don't update if duplicate
+      }
+    }
+    
+    if (field === 'subjectId' && value > 0 && updated[index].classId > 0) {
+      const isDuplicate = updated.some((assignment, i) => 
+        i !== index && 
+        assignment.subjectId === updated[index].subjectId && 
+        assignment.classId === updated[index].classId
+      );
+      
+      if (isDuplicate) {
+        toast.error('This subject-class combination already exists!');
+        return; // Don't update if duplicate
+      }
+    }
+    
     setAssignments(updated);
+  };
+
+  // Helper function to check if a subject-class combination is already used
+  const isCombinationUsed = (subjectId: number, classId: number, currentIndex: number) => {
+    return assignments.some((assignment, index) => 
+      index !== currentIndex && 
+      assignment.subjectId === subjectId && 
+      assignment.classId === classId
+    );
+  };
+
+  // Helper function to get available subjects for a specific assignment
+  const getAvailableSubjects = (currentIndex: number, currentClassId: number) => {
+    if (currentClassId === 0) return subjects; // If no class selected, show all subjects
+    
+    return subjects.filter(subject => 
+      !isCombinationUsed(subject.id, currentClassId, currentIndex)
+    );
+  };
+
+  // Helper function to get available classes for a specific assignment
+  const getAvailableClasses = (currentIndex: number, currentSubjectId: number) => {
+    if (currentSubjectId === 0) return classes; // If no subject selected, show all classes
+    
+    return classes.filter(cls => 
+      !isCombinationUsed(currentSubjectId, cls.id, currentIndex)
+    );
   };
 
   // Register the field once
@@ -120,7 +176,7 @@ const TeacherSubjectClassAssignment = ({
                   className="ring-[1.5px] ring-gray-300 p-1 rounded-md text-xs w-full"
                 >
                   <option value={0}>Select Subject</option>
-                  {subjects.map((subject) => (
+                  {getAvailableSubjects(index, assignment.classId).map((subject) => (
                     <option key={subject.id} value={subject.id}>
                       {subject.name}
                     </option>
@@ -137,7 +193,7 @@ const TeacherSubjectClassAssignment = ({
                   className="ring-[1.5px] ring-gray-300 p-1 rounded-md text-xs w-full"
                 >
                   <option value={0}>Select Class</option>
-                  {classes.map((cls) => (
+                  {getAvailableClasses(index, assignment.subjectId).map((cls) => (
                     <option key={cls.id} value={cls.id}>
                       {cls.name}
                     </option>
@@ -166,6 +222,8 @@ const TeacherSubjectClassAssignment = ({
       
       <p className="text-xs text-gray-400">
         Assign specific subjects to specific classes. For example: &quot;Math to Class 1A&quot; or &quot;English to Class 2B&quot;.
+        <br />
+        <span className="text-orange-500">Note: Duplicate subject-class combinations are not allowed.</span>
       </p>
     </div>
   );

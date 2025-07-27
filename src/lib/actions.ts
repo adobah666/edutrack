@@ -244,12 +244,34 @@ export const createParent = async (
       },
     });
 
-    // Link students if provided
+    // Link students if provided (backward compatibility)
     if (data.studentIds?.length > 0) {
-      await prisma.student.updateMany({
-        where: { id: { in: data.studentIds } },
-        data: { parentId: createdClerkUser.id },
+      await prisma.parentStudent.createMany({
+        data: data.studentIds.map(studentId => ({
+          parentId: createdClerkUser.id,
+          studentId: studentId,
+          relationshipType: 'GUARDIAN' // Default relationship type for backward compatibility
+        })),
+        skipDuplicates: true,
       });
+    }
+
+    // Create parent-student relationships with relationship types if provided
+    if (data.parentStudents && data.parentStudents.length > 0) {
+      const validAssignments = data.parentStudents.filter(
+        (assignment) => assignment.studentId && assignment.relationshipType
+      );
+      
+      if (validAssignments.length > 0) {
+        await prisma.parentStudent.createMany({
+          data: validAssignments.map((assignment) => ({
+            parentId: createdClerkUser.id,
+            studentId: assignment.studentId,
+            relationshipType: assignment.relationshipType as any,
+          })),
+          skipDuplicates: true,
+        });
+      }
     }
 
     return {
@@ -2136,25 +2158,6 @@ export const updateParent = async (
       });
     }
 
-    // Get existing students for this parent
-    const existingStudents = await prisma.student.findMany({
-      where: { parentId: data.id },
-    });
-    const existingStudentIds = existingStudents.map((s) => s.id.toString());
-
-    // Convert all student IDs to strings and filter out any invalid values
-    const newStudentIds = (data.studentIds || []).map((id) => id.toString());
-
-    // Find students to remove (exist in existing but not in new)
-    const studentsToRemove = existingStudentIds.filter(
-      (id) => !newStudentIds.includes(id)
-    );
-
-    // Find students to add (exist in new but not in existing)
-    const studentsToAdd = newStudentIds.filter(
-      (id) => !existingStudentIds.includes(id)
-    );
-
     // Update parent record first
     await prisma.parent.update({
       where: { id: data.id },
@@ -2169,26 +2172,50 @@ export const updateParent = async (
       },
     });
 
-    // Remove students that should no longer be associated
-    if (studentsToRemove.length > 0) {
-      await prisma.student.updateMany({
-        where: {
-          id: { in: studentsToRemove },
-          parentId: data.id, // Only update if they're actually connected to this parent
-        },
-        data: { parentId: null },
+    // Handle parent-student relationships with relationship types
+    if (data.parentStudents !== undefined) {
+      // First, delete existing relationships for this parent
+      await prisma.parentStudent.deleteMany({
+        where: { parentId: data.id },
       });
+
+      // Then create new relationships if provided
+      if (data.parentStudents.length > 0) {
+        const validAssignments = data.parentStudents.filter(
+          (assignment) => assignment.studentId && assignment.relationshipType
+        );
+        
+        if (validAssignments.length > 0) {
+          await prisma.parentStudent.createMany({
+            data: validAssignments.map((assignment) => ({
+              parentId: data.id!,
+              studentId: assignment.studentId,
+              relationshipType: assignment.relationshipType as any,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
     }
 
-    // Add new student connections
-    if (studentsToAdd.length > 0) {
-      await prisma.student.updateMany({
-        where: {
-          id: { in: studentsToAdd },
-          parentId: null, // Only update students that don't have a parent
-        },
-        data: { parentId: data.id },
+    // Handle backward compatibility with studentIds
+    if (data.studentIds !== undefined && data.parentStudents === undefined) {
+      // Delete existing relationships
+      await prisma.parentStudent.deleteMany({
+        where: { parentId: data.id },
       });
+
+      // Create new relationships with default GUARDIAN type
+      if (data.studentIds.length > 0) {
+        await prisma.parentStudent.createMany({
+          data: data.studentIds.map(studentId => ({
+            parentId: data.id!,
+            studentId: studentId,
+            relationshipType: 'GUARDIAN' as any,
+          })),
+          skipDuplicates: true,
+        });
+      }
     }
 
     return { success: true, error: false };

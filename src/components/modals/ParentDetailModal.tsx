@@ -8,6 +8,11 @@ import Image from "next/image";
 interface ParentDetailModalProps {
   parent: Parent & { 
     students?: Student[] | null;
+    parentStudents?: {
+      id: number;
+      relationshipType: string;
+      student: { id: string; name: string; surname: string };
+    }[];
   };
   isOpen: boolean;
   onClose: () => void;
@@ -81,18 +86,38 @@ const ParentDetailModal = ({
                   </div>
 
                   <div>
-                    <h4 className="font-medium text-gray-900">Students</h4>
-                    {parent.students && parent.students.length > 0 ? (
-                      <div className="mt-2 space-y-3">
-                        {parent.students.map((student) => (
-                          <div key={student.id} className="bg-gray-50 p-2 rounded-lg">
-                            <div className="font-medium">{student.name} {student.surname}</div>
-                            <div className="text-xs text-gray-500">ID: {student.username}</div>
-                          </div>
-                        ))}
+                    {/* Show granular relationships if available */}
+                    {parent.parentStudents && parent.parentStudents.length > 0 ? (
+                      <div>
+                        <h4 className="font-medium text-gray-900">Student Relationships</h4>
+                        <div className="mt-2 space-y-3">
+                          {parent.parentStudents.map((rel) => (
+                            <div key={rel.id} className="bg-gray-50 p-2 rounded-lg">
+                              <div className="font-medium">{rel.student.name} {rel.student.surname}</div>
+                              <div className="text-xs text-blue-600 font-medium">Relationship: {rel.relationshipType}</div>
+                              <div className="text-xs text-gray-500">Student ID: {rel.student.id}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : parent.students && parent.students.length > 0 ? (
+                      /* Fallback to old system if no granular relationships */
+                      <div>
+                        <h4 className="font-medium text-gray-900">Students</h4>
+                        <div className="mt-2 space-y-3">
+                          {parent.students.map((student) => (
+                            <div key={student.id} className="bg-gray-50 p-2 rounded-lg">
+                              <div className="font-medium">{student.name} {student.surname}</div>
+                              <div className="text-xs text-gray-500">ID: {student.username}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ) : (
-                      <p className="mt-2 text-gray-500">No students assigned</p>
+                      <div>
+                        <h4 className="font-medium text-gray-900">Students</h4>
+                        <p className="mt-2 text-gray-500">No students assigned</p>
+                      </div>
                     )}
                   </div>
                 </div>

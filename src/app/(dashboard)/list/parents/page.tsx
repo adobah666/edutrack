@@ -28,7 +28,7 @@ const ParentListPage = async ({
       accessor: "name",
     },
     {
-      header: "Student Names",
+      header: "Students & Relationships",
       accessor: "studentNames",
       className: "hidden md:table-cell",
     },
@@ -68,9 +68,11 @@ const ParentListPage = async ({
     query.OR = [
       { name: { contains: searchTerm, mode: "insensitive" } },
       {
-        students: {
+        parentStudents: {
           some: {
-            name: { contains: searchTerm, mode: "insensitive" }
+            student: {
+              name: { contains: searchTerm, mode: "insensitive" }
+            }
           }
         }
       }
@@ -90,7 +92,11 @@ const ParentListPage = async ({
     prisma.parent.findMany({
       where: query,
       include: {
-        students: true,
+        parentStudents: {
+          include: {
+            student: { select: { id: true, name: true, surname: true } }
+          }
+        }
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
@@ -99,20 +105,27 @@ const ParentListPage = async ({
   ]);
 
   // Transform the data to match the table columns
-  const tableData = data.map(item => ({
-    id: item.id,
-    name: <ParentRow parent={item} />,
-    studentNames: item.students?.map(student => student.name).join(", ") || "-",
-    phone: item.phone,
-    address: item.address,
-    // For the actions column, we'll render it conditionally based on role
-    actions: role === "admin" ? (
-      <div className="flex items-center gap-2">
-        <FormContainer table="parent" type="update" data={item} />
-        <FormContainer table="parent" type="delete" id={item.id} />
-      </div>
-    ) : null
-  }));
+  const tableData = data.map(item => {
+    // Create student names with relationship types
+    const studentInfo = item.parentStudents?.map(rel => 
+      `${rel.student.name} ${rel.student.surname} (${rel.relationshipType})`
+    ).join(", ") || "-";
+    
+    return {
+      id: item.id,
+      name: <ParentRow parent={item} />,
+      studentNames: studentInfo,
+      phone: item.phone,
+      address: item.address,
+      // For the actions column, we'll render it conditionally based on role
+      actions: role === "admin" ? (
+        <div className="flex items-center gap-2">
+          <FormContainer table="parent" type="update" data={item} id={item.id} />
+          <FormContainer table="parent" type="delete" id={item.id} />
+        </div>
+      ) : null
+    };
+  });
 
   return (
     <div className="flex-1 p-4 sm:px-6 lg:px-8">

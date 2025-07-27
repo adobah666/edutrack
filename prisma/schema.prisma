@@ -73,7 +73,6 @@ model Student {
   bloodType   String
   sex         UserSex
   createdAt   DateTime     @default(now())
-  parentId    String?
   classId     Int          // Current class
   gradeId     Int
   schoolId    String
@@ -82,11 +81,11 @@ model Student {
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
   grade       Grade        @relation(fields: [gradeId], references: [id])
-  parent      Parent?      @relation(fields: [parentId], references: [id])
   school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
   classHistory StudentClassHistory[]
   examEligibility ExamEligibleStudent[]
+  parentStudents ParentStudent[]
 }
 
 model StudentClassHistory {
@@ -145,7 +144,7 @@ model Parent {
   schoolId  String
   img       String?
   school    School    @relation(fields: [schoolId], references: [id])
-  students  Student[]
+  parentStudents ParentStudent[]
 }
 
 model Grade {
@@ -502,6 +501,19 @@ enum UserSex {
   FEMALE
 }
 
+enum RelationshipType {
+  FATHER
+  MOTHER
+  GUARDIAN
+  UNCLE
+  AUNT
+  GRANDFATHER
+  GRANDMOTHER
+  STEPFATHER
+  STEPMOTHER
+  OTHER
+}
+
 enum Priority {
   LOW
   MEDIUM
@@ -690,4 +702,18 @@ model TeacherSubjectClass {
   class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
   
   @@unique([teacherId, subjectId, classId]) // Prevent duplicate assignments
+}
+
+// Junction table for Parent-Student relationships with relationship type
+model ParentStudent {
+  id             Int              @id @default(autoincrement())
+  parentId       String
+  studentId      String
+  relationshipType RelationshipType
+  createdAt      DateTime         @default(now())
+  
+  parent         Parent           @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student        Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([parentId, studentId]) // One relationship per parent-student pair
 }

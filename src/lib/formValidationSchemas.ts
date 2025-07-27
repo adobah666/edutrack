@@ -117,7 +117,12 @@ export const parentSchema = z.object({
   phone: z.string(),
   address: z.string(),
   img: z.string().optional(),
-  studentIds: z.array(z.string())
+  studentIds: z.array(z.string()), // Keep for backward compatibility
+  parentStudents: z.array(z.object({
+    id: z.number().optional(),
+    studentId: z.string().min(1, { message: "Student is required!" }),
+    relationshipType: z.enum(["FATHER", "MOTHER", "GUARDIAN", "UNCLE", "AUNT", "GRANDFATHER", "GRANDMOTHER", "STEPFATHER", "STEPMOTHER", "OTHER"], { message: "Relationship type is required!" }),
+  })).optional(),
 });
 
 export type ParentSchema = z.infer<typeof parentSchema>;

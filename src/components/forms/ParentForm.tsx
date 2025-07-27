@@ -11,6 +11,7 @@ import { createParent, updateParent } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
+import ParentStudentAssignment from "../ParentStudentAssignment";
 
 interface Student {
   id: number;
@@ -242,84 +243,13 @@ const ParentForm = ({
           register={register}
           error={errors?.address}
         />      </div>
-      <span className="text-xs text-gray-400 font-medium mb-1">Students</span>
-
-      {type === "update" && currentStudents.length > 0 && (
-        <div className="mb-4">
-          <p className="text-xs text-gray-600 mb-2">Currently assigned students:</p>
-          <div className="flex flex-wrap gap-2">
-            {currentStudents.map((student: any) => (
-              <div key={student.id} className="flex items-center gap-2 bg-gray-100 p-2 rounded">
-                <span className="text-sm">{student.name} {student.surname}</span>
-                <button
-                  type="button"
-                  onClick={() => removeStudent(student.id)}
-                  className="text-red-500 hover:text-red-700 text-sm"
-                >
-                  ×
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="mb-4 border rounded-lg p-4 bg-white shadow-sm">
-        <div className="mb-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Filter Students by Grade
-          </label>
-          <select
-            value={selectedGrade}
-            onChange={(e) => setSelectedGrade(e.target.value)}
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full md:w-1/3 border-gray-300 focus:ring-lamaPurple focus:border-lamaPurple"
-          >
-            <option value="">All Grades</option>
-            {grades?.map((grade: any) => (
-              <option key={grade.id} value={grade.id}>
-                {grade.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Students
-          </label>
-          <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto p-3 border rounded-md bg-gray-50">
-            {students?.length === 0 ? (
-              <p className="text-sm text-gray-500">No students available</p>
-            ) : (
-              students
-                ?.filter((student: any) => !selectedGrade || student.gradeId === parseInt(selectedGrade))
-                .map((student: any) => {
-                  const isAssigned = currentStudents.some(s => s.id === student.id);
-                  return (
-                    <label
-                      key={student.id}
-                      className="flex items-center gap-2 bg-white p-2 rounded shadow-sm hover:bg-gray-50 transition-colors cursor-pointer min-w-[200px]"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isAssigned}
-                        onChange={(e) => handleStudentCheckbox(student, e.target.checked)}
-                        className="form-checkbox h-4 w-4 text-lamaPurple rounded"
-                      />
-                      <span className="text-sm">{student.name} {student.surname}</span>
-                    </label>
-                  );
-                })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {errors?.studentIds && (
-        <span className="text-xs text-red-500 mb-1">
-          {errors.studentIds.message}
-        </span>
-      )}
+      <ParentStudentAssignment 
+        students={students || []}
+        defaultAssignments={relatedData?.existingAssignments || []}
+        register={register}
+        setValue={setValue}
+        errors={errors}
+      />
 
       <div className="flex flex-col gap-2 w-full mb-4">
         <label className="text-xs text-gray-500">Profile Photo</label>

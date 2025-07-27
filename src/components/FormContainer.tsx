@@ -228,21 +228,11 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           orderBy: { level: 'asc' }
         });
 
-        // Fetch all students without parents
+        // Fetch all students in the school
         const availableStudents = await prisma.student.findMany({
-          where: {
-            ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
-            OR: [
-              { parentId: null },
-              // Include current parent's students when updating
-              ...(typeof id === 'string' ? [{ parentId: id }] : [])
-            ]
-          },
-          select: { 
-            id: true, 
-            name: true, 
-            surname: true,
-            gradeId: true
+          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
+          include: {
+            class: true
           },
           orderBy: [
             { gradeId: 'asc' },
@@ -250,10 +240,50 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           ]
         });
 
+        // Transform students to include className
+        const studentsWithClass = availableStudents.map(student => ({
+          ...student,
+          className: student.class?.name
+        }));
+
+        // If editing, fetch existing parent-student relationships
+        let existingParentAssignments: any[] = [];
+        if (id) {
+          console.log('FormContainer: Fetching parent with ID:', id); // Debug log
+          try {
+            const parent = await prisma.parent.findUnique({
+              where: { id: id as string },
+              include: {
+                parentStudents: {
+                  include: {
+                    student: { 
+                      select: { 
+                        id: true, 
+                        name: true, 
+                        surname: true,
+                        class: { select: { name: true } }
+                      } 
+                    }
+                  }
+                }
+              }
+            });
+            console.log('FormContainer: Found parent:', parent ? `${parent.name} ${parent.surname}` : 'null'); // Debug log
+            existingParentAssignments = parent?.parentStudents || [];
+            console.log('FormContainer: Fetched existing parent assignments:', existingParentAssignments); // Debug log
+          } catch (error) {
+            console.error('FormContainer: Error fetching parent assignments:', error); // Debug log
+          }
+        } else {
+          console.log('FormContainer: No ID provided, this is a create form'); // Debug log
+        }
+
         relatedData = { 
-          grades: parentGrades,
-          students: availableStudents
+          grades: parentGrades, 
+          students: studentsWithClass,
+          existingAssignments: existingParentAssignments
         };
+        console.log('RelatedData for parent form:', relatedData); // Debug log
         break;
 
       case "attendance":

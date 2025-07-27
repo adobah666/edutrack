@@ -90,7 +90,11 @@ const StudentListPage = async ({
       where: query,
       include: {
         class: true,
-        parent: true,
+        parentStudents: {
+          include: {
+            parent: true
+          }
+        },
       },
       orderBy: {
         name: 'asc',

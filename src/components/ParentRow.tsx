@@ -8,6 +8,11 @@ import Image from "next/image";
 type Props = {
   parent: Parent & { 
     students?: Student[] | null;
+    parentStudents?: {
+      id: number;
+      relationshipType: string;
+      student: { id: string; name: string; surname: string };
+    }[];
   };
   onAction?: (action: "update" | "delete", parent: Parent) => void;
 };

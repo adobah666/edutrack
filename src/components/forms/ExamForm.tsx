@@ -5,7 +5,7 @@ import InputField from "../InputField";
 import { examSchema, ExamSchema } from "@/lib/formValidationSchemas";
 import { createExam, updateExam } from "@/lib/actions";
 import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
@@ -20,10 +20,15 @@ const ExamForm = ({
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: any;
 }) => {
+  const [selectedClasses, setSelectedClasses] = useState<number[]>(
+    data?.examClasses?.map((ec: any) => ec.classId) || (data?.classId ? [data.classId] : [])
+  );
+
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<ExamSchema>({
     resolver: zodResolver(examSchema),
     defaultValues: {
@@ -32,10 +37,15 @@ const ExamForm = ({
       endTime: data?.endTime ? new Date(data.endTime) : new Date(),
       term: data?.term || 'FIRST',
       subjectId: data?.subjectId?.toString() || '',
-      classId: data?.classId?.toString() || '',
+      classIds: selectedClasses,
       id: data?.id?.toString() || ''
     }
   });
+
+  // Update form value when selected classes change
+  useEffect(() => {
+    setValue('classIds', selectedClasses);
+  }, [selectedClasses, setValue]);
 
   // AFTER REACT 19 IT'LL BE USEACTIONSTATE 
   const [state, formAction] = useFormState(
@@ -158,26 +168,39 @@ const ExamForm = ({
           )}
         </div>
 
-        {/* Class selection */}
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Class</label>
-          <select
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("classId")}
-          >
-            <option value="">Select a class</option>
+        {/* Multiple Class selection */}
+        <div className="flex flex-col gap-2 w-full md:w-1/2">
+          <label className="text-xs text-gray-500">Classes (Select multiple)</label>
+          <div className="ring-[1.5px] ring-gray-300 rounded-md p-2 max-h-32 overflow-y-auto">
             {classes?.map((classItem: { id: number; name: string }) => (
-              <option
-                value={classItem.id}
+              <label
                 key={classItem.id}
+                className="flex items-center gap-2 p-1 hover:bg-gray-50 cursor-pointer"
               >
-                {classItem.name}
-              </option>
+                <input
+                  type="checkbox"
+                  checked={selectedClasses.includes(classItem.id)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setSelectedClasses(prev => [...prev, classItem.id]);
+                    } else {
+                      setSelectedClasses(prev => prev.filter(id => id !== classItem.id));
+                    }
+                  }}
+                  className="rounded border-gray-300"
+                />
+                <span className="text-sm">{classItem.name}</span>
+              </label>
             ))}
-          </select>
-          {errors.classId?.message && (
+          </div>
+          {selectedClasses.length > 0 && (
+            <div className="text-xs text-blue-600">
+              Selected: {selectedClasses.length} class{selectedClasses.length !== 1 ? 'es' : ''}
+            </div>
+          )}
+          {errors.classIds?.message && (
             <p className="text-xs text-red-400">
-              {errors.classId.message.toString()}
+              {errors.classIds.message.toString()}
             </p>
           )}
         </div>

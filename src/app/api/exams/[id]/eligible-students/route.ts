@@ -43,6 +43,13 @@ export async function GET(
         id: examId,
         ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
       },
+      include: {
+        examClasses: {
+          include: {
+            class: true,
+          },
+        },
+      },
     });
 
     if (!exam) {

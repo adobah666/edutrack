@@ -80,8 +80,12 @@ export const examSchema = z.object({
   endTime: z.coerce.date({ message: "End time is required!" }),
   term: z.enum(["FIRST", "SECOND", "THIRD", "FINAL"], { message: "Term is required!" }),
   subjectId: z.coerce.number({ message: "Subject is required!" }),
-  classId: z.coerce.number({ message: "Class is required!" }),
+  classId: z.coerce.number().optional(), // Keep for backward compatibility
+  classIds: z.array(z.coerce.number()).min(1, { message: "At least one class is required!" }).optional(),
   maxPoints: z.coerce.number().min(1, { message: "Max points must be at least 1!" }).default(100),
+}).refine((data) => data.classId || (data.classIds && data.classIds.length > 0), {
+  message: "At least one class must be selected!",
+  path: ["classIds"],
 });
 
 

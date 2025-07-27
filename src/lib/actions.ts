@@ -921,16 +921,28 @@ export const createExam = async (
           subject: {
             connect: { id: data.subjectId },
           },
-          class: {
-            connect: { id: data.classId },
-          },
+          // Keep backward compatibility with single class
+          ...(data.classId && { class: { connect: { id: data.classId } } }),
         },
       });
 
-      // Get all current students in the class
+      // Handle multiple classes (new approach) or single class (backward compatibility)
+      const classIds = data.classIds && data.classIds.length > 0 ? data.classIds : [data.classId];
+      
+      // Create exam-class relationships
+      if (classIds.length > 0) {
+        await tx.examClass.createMany({
+          data: classIds.map(classId => ({
+            examId: exam.id,
+            classId: classId,
+          })),
+        });
+      }
+
+      // Get all current students in the selected classes
       const currentStudents = await tx.student.findMany({
         where: {
-          classId: data.classId,
+          classId: { in: classIds },
           schoolId: schoolId,
         },
         select: {

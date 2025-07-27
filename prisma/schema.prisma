@@ -176,6 +176,7 @@ model Class {
   students      Student[]
   studentHistory StudentClassHistory[]
   resultApprovals ResultApproval[]
+  examClasses   ExamClass[] // New many-to-many relationship
   
   @@unique([name, schoolId])
 }
@@ -280,7 +281,7 @@ model Exam {
   startTime DateTime
   endTime   DateTime
   term      Term     @default(FIRST)
-  classId   Int?
+  classId   Int?     // Keep for backward compatibility, will be deprecated
   subjectId Int?
   schoolId  String
   maxPoints Int      @default(100)
@@ -290,6 +291,18 @@ model Exam {
   subject   Subject? @relation(fields: [subjectId], references: [id])
   results   Result[]
   eligibleStudents ExamEligibleStudent[]
+  examClasses ExamClass[] // New many-to-many relationship
+}
+
+model ExamClass {
+  id      Int @id @default(autoincrement())
+  examId  Int
+  classId Int
+  
+  exam    Exam  @relation(fields: [examId], references: [id], onDelete: Cascade)
+  class   Class @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  @@unique([examId, classId]) // Prevent duplicate class assignments
 }
 
 model ExamEligibleStudent {

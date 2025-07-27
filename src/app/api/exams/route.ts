@@ -32,6 +32,16 @@ export async function GET() {
             name: true 
           } 
         },
+        examClasses: {
+          include: {
+            class: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
       orderBy: {
         startTime: "desc",

@@ -9,6 +9,11 @@ type Props = {
   teacher: Teacher & { 
     subjects: Subject[];
     classes: Class[];
+    teacherSubjectClasses?: {
+      id: number;
+      subject: { id: number; name: string };
+      class: { id: number; name: string };
+    }[];
   };
 };
 

@@ -130,6 +130,7 @@ model Teacher {
   school        School         @relation(fields: [schoolId], references: [id])
   subjects      Subject[]      @relation("SubjectToTeacher")
   salary        StaffSalary?
+  teacherSubjectClasses TeacherSubjectClass[]
 }
 
 model Parent {
@@ -177,6 +178,7 @@ model Class {
   studentHistory StudentClassHistory[]
   resultApprovals ResultApproval[]
   examClasses   ExamClass[] // New many-to-many relationship
+  teacherSubjectClasses TeacherSubjectClass[]
   
   @@unique([name, schoolId])
 }
@@ -195,6 +197,7 @@ model Subject {
   teachers        Teacher[]    @relation("SubjectToTeacher")
   termWeights     SubjectTermWeight[]
   gradingScheme   GradingScheme? @relation("SubjectGradingScheme", fields: [gradingSchemeId], references: [id])
+  teacherSubjectClasses TeacherSubjectClass[]
   
   @@unique([name, schoolId])
 }
@@ -672,4 +675,19 @@ model BudgetItem {
   school   School  @relation(fields: [schoolId], references: [id])
   
   @@unique([budgetId, accountId])
+}
+
+// Junction table for Teacher-Subject-Class assignments
+model TeacherSubjectClass {
+  id        Int     @id @default(autoincrement())
+  teacherId String
+  subjectId Int
+  classId   Int
+  createdAt DateTime @default(now())
+  
+  teacher   Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  subject   Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  @@unique([teacherId, subjectId, classId]) // Prevent duplicate assignments
 }

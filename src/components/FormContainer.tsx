@@ -113,11 +113,39 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         relatedData = { teachers: classTeachers, grades: classGrades };
         break;
       case "teacher":
-        const teacherSubjects = await prisma.subject.findMany({
-          where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
-          select: { id: true, name: true },
-        });
-        relatedData = { subjects: teacherSubjects };
+        const [teacherSubjects, teacherClasses] = await Promise.all([
+          prisma.subject.findMany({
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
+            select: { id: true, name: true },
+          }),
+          prisma.class.findMany({
+            where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
+            select: { id: true, name: true },
+          })
+        ]);
+        
+        // If editing, fetch existing teacher-subject-class assignments
+        let existingAssignments = [];
+        if (id) {
+          const teacher = await prisma.teacher.findUnique({
+            where: { id: id as string },
+            include: {
+              teacherSubjectClasses: {
+                include: {
+                  subject: { select: { id: true, name: true } },
+                  class: { select: { id: true, name: true } }
+                }
+              }
+            }
+          });
+          existingAssignments = teacher?.teacherSubjectClasses || [];
+        }
+        
+        relatedData = { 
+          subjects: teacherSubjects, 
+          classes: teacherClasses,
+          existingAssignments 
+        };
         break;
       case "student":
         const studentGrades = await prisma.grade.findMany({

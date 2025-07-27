@@ -11,6 +11,7 @@ import { createTeacher, updateTeacher } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
+import TeacherSubjectClassAssignment from "../TeacherSubjectClassAssignment";
 
 interface FormState {
   success: boolean;
@@ -259,26 +260,13 @@ const TeacherForm = ({
             </p>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full md:w-1/4">
-          <label className="text-xs text-gray-500">Subjects</label>
-          <select
-            multiple
-            className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
-            {...register("subjects")}
-            defaultValue={data?.subjects}
-          >
-            {subjects.map((subject: { id: number; name: string }) => (
-              <option value={subject.id} key={subject.id}>
-                {subject.name}
-              </option>
-            ))}
-          </select>
-          {errors.subjects?.message && (
-            <p className="text-xs text-red-400">
-              {errors.subjects.message.toString()}
-            </p>
-          )}
-        </div>
+        <TeacherSubjectClassAssignment 
+          subjects={subjects}
+          classes={relatedData?.classes || []}
+          defaultAssignments={relatedData?.existingAssignments || []}
+          register={register}
+          errors={errors}
+        />
         <div className="flex flex-col gap-2 w-full">
           <label className="text-xs text-gray-500">Profile Photo</label>
           <div className="flex items-center gap-4">

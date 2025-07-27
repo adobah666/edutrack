@@ -9,8 +9,8 @@ async function createSuperAdmin() {
 
     // Create a new user in Clerk first
     const superAdminUser = await clerkClient.users.createUser({
-      emailAddress: ['superadmin@edutrack.com'],
-      username: 'superadmin',
+      emailAddress: ['superadmin3@edutrack.com'],
+      username: 'superadmin3',
       password: 'SuperAdmin2025!',
       firstName: 'Super',
       lastName: 'Admin',
@@ -26,10 +26,10 @@ async function createSuperAdmin() {
     const admin = await prisma.admin.create({
       data: {
         id: superAdminUser.id,
-        username: 'superadmin',
+        username: 'superadmin3',
         name: 'Super',
         surname: 'Admin',
-        email: 'superadmin@edutrack.com',
+        email: 'superadmin3@edutrack.com',
         role: 'SUPER_ADMIN',
         schoolId: null, // Super admin doesn't belong to any specific school
       }
@@ -41,10 +41,10 @@ async function createSuperAdmin() {
     console.log(`   Email: ${admin.email}`);
     console.log(`   Role: ${admin.role}`);
     console.log(`   School Access: All Schools`);
-    
+
     console.log('\n🎉 Super Admin Setup Complete!');
     console.log('\n📋 Login Credentials:');
-    console.log(`   Email: superadmin@edutrack.com`);
+    console.log(`   Email: superadmin3@edutrack.com`);
     console.log(`   Password: SuperAdmin2025!`);
     console.log('\n🔐 This super admin can:');
     console.log('   • Access all schools');
@@ -54,7 +54,7 @@ async function createSuperAdmin() {
 
   } catch (error) {
     console.error('❌ Error creating super admin:', error);
-    
+
     if (error.errors) {
       error.errors.forEach(err => {
         console.error(`   - ${err.message}`);

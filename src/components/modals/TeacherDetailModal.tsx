@@ -9,6 +9,11 @@ interface TeacherDetailModalProps {
   teacher: Teacher & { 
     subjects: Subject[];
     classes: Class[];
+    teacherSubjectClasses?: {
+      id: number;
+      subject: { id: number; name: string };
+      class: { id: number; name: string };
+    }[];
   };
   isOpen: boolean;
   onClose: () => void;
@@ -94,41 +99,67 @@ const TeacherDetailModal = ({
                   </div>
 
                   <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900">Subjects</h4>
-                      {teacher.subjects.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {teacher.subjects.map((subject) => (
-                            <span 
-                              key={subject.id} 
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lamaPurple text-white"
+                    {/* Show granular assignments if available */}
+                    {teacher.teacherSubjectClasses && teacher.teacherSubjectClasses.length > 0 ? (
+                      <div>
+                        <h4 className="font-medium text-gray-900">Subject → Class Assignments</h4>
+                        <div className="mt-2 space-y-2">
+                          {teacher.teacherSubjectClasses.map((assignment) => (
+                            <div 
+                              key={assignment.id} 
+                              className="flex items-center gap-2 p-2 bg-gray-50 rounded-md text-sm"
                             >
-                              {subject.name}
-                            </span>
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-lamaPurple text-white">
+                                {assignment.subject.name}
+                              </span>
+                              <span className="text-gray-500">→</span>
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-lamaSky text-white">
+                                {assignment.class.name}
+                              </span>
+                            </div>
                           ))}
                         </div>
-                      ) : (
-                        <p className="mt-2 text-gray-500">No subjects assigned</p>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      /* Fallback to old system if no granular assignments */
+                      <>
+                        <div>
+                          <h4 className="font-medium text-gray-900">Subjects</h4>
+                          {teacher.subjects.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {teacher.subjects.map((subject) => (
+                                <span 
+                                  key={subject.id} 
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lamaPurple text-white"
+                                >
+                                  {subject.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-gray-500">No subjects assigned</p>
+                          )}
+                        </div>
 
-                    <div>
-                      <h4 className="font-medium text-gray-900">Classes</h4>
-                      {teacher.classes.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-2">
-                          {teacher.classes.map((classItem) => (
-                            <span 
-                              key={classItem.id} 
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lamaSky text-white"
-                            >
-                              {classItem.name}
-                            </span>
-                          ))}
+                        <div>
+                          <h4 className="font-medium text-gray-900">Classes</h4>
+                          {teacher.classes.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {teacher.classes.map((classItem) => (
+                                <span 
+                                  key={classItem.id} 
+                                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-lamaSky text-white"
+                                >
+                                  {classItem.name}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-gray-500">No classes assigned</p>
+                          )}
                         </div>
-                      ) : (
-                        <p className="mt-2 text-gray-500">No classes assigned</p>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
                 </div>
 

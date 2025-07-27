@@ -47,13 +47,8 @@ const TeacherListPage = async ({
       className: "hidden md:table-cell",
     },
     {
-      header: "Subjects",
+      header: "Subject → Class Assignments",
       accessor: "subjectNames",
-      className: "hidden md:table-cell",
-    },
-    {
-      header: "Classes",
-      accessor: "classNames",
       className: "hidden md:table-cell",
     },
     {
@@ -137,6 +132,12 @@ const TeacherListPage = async ({
     include: {
       subjects: true,
       classes: true,
+      teacherSubjectClasses: {
+        include: {
+          subject: { select: { id: true, name: true } },
+          class: { select: { id: true, name: true } }
+        }
+      }
     },
     take: ITEM_PER_PAGE,
     skip: ITEM_PER_PAGE * (p - 1),
@@ -161,21 +162,32 @@ const TeacherListPage = async ({
   }
 
   // Transform the data to match the table columns
-  const tableData = teacherData.map(item => ({
-    id: item.id,
-    info: <TeacherRow teacher={item} />,
-    username: item.username,
-    subjectNames: item.subjects.map(subject => subject.name).join(", "),
-    classNames: item.classes.map(classItem => classItem.name).join(", "),
-    phone: item.phone,
-    address: item.address,
-    actions: role === "admin" ? (
-      <div className="flex items-center gap-2">
-        <FormContainer table="teacher" type="update" data={item} />
-        <FormContainer table="teacher" type="delete" id={item.id} />
-      </div>
-    ) : null
-  }));
+  const tableData = teacherData.map(item => {
+    // Create granular assignments display
+    const granularAssignments = item.teacherSubjectClasses.map(assignment => 
+      `${assignment.subject.name} → ${assignment.class.name}`
+    ).join(", ");
+    
+    // Fallback to old system if no granular assignments
+    const subjectNames = granularAssignments || item.subjects.map(subject => subject.name).join(", ");
+    const classNames = item.classes.map(classItem => classItem.name).join(", ");
+    
+    return {
+      id: item.id,
+      info: <TeacherRow teacher={item} />,
+      username: item.username,
+      subjectNames: granularAssignments ? granularAssignments : subjectNames,
+      classNames: granularAssignments ? "" : classNames, // Hide classes column if using granular view
+      phone: item.phone,
+      address: item.address,
+      actions: role === "admin" ? (
+        <div className="flex items-center gap-2">
+          <FormContainer table="teacher" type="update" data={item} />
+          <FormContainer table="teacher" type="delete" id={item.id} />
+        </div>
+      ) : null
+    };
+  });
 
   return (
     <div className="flex-1 p-4 sm:px-6 lg:px-8">

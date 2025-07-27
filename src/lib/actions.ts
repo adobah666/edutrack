@@ -496,7 +496,7 @@ export const createTeacher = async (
 
     try {
       // If we got here, user creation succeeded, now create the teacher record
-      await prisma.teacher.create({
+      const teacher = await prisma.teacher.create({
         data: {
           id: createdClerkUser.id,
           username: data.username,
@@ -517,6 +517,24 @@ export const createTeacher = async (
           },
         },
       });
+
+      // Create teacher-subject-class assignments if provided
+      if (data.teacherSubjectClasses && data.teacherSubjectClasses.length > 0) {
+        const validAssignments = data.teacherSubjectClasses.filter(
+          (assignment) => assignment.subjectId > 0 && assignment.classId > 0
+        );
+        
+        if (validAssignments.length > 0) {
+          await prisma.teacherSubjectClass.createMany({
+            data: validAssignments.map((assignment) => ({
+              teacherId: teacher.id,
+              subjectId: assignment.subjectId,
+              classId: assignment.classId,
+            })),
+            skipDuplicates: true, // Prevent duplicate assignments
+          });
+        }
+      }
 
       return { success: true, error: false };
     } catch (error) {
@@ -578,6 +596,32 @@ export const updateTeacher = async (
         },
       },
     });
+
+    // Update teacher-subject-class assignments
+    if (data.teacherSubjectClasses !== undefined) {
+      // First, delete existing assignments for this teacher
+      await prisma.teacherSubjectClass.deleteMany({
+        where: { teacherId: data.id },
+      });
+
+      // Then create new assignments if provided
+      if (data.teacherSubjectClasses.length > 0) {
+        const validAssignments = data.teacherSubjectClasses.filter(
+          (assignment) => assignment.subjectId > 0 && assignment.classId > 0
+        );
+        
+        if (validAssignments.length > 0) {
+          await prisma.teacherSubjectClass.createMany({
+            data: validAssignments.map((assignment) => ({
+              teacherId: data.id,
+              subjectId: assignment.subjectId,
+              classId: assignment.classId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    }
     // revalidatePath("/list/teachers");
     return { success: true, error: false };
   } catch (err) {
@@ -617,7 +661,12 @@ export const deleteTeacher = async (
         where: { teacherId: id },
       });
 
-      // 5. Disconnect from subjects (many-to-many relationship)
+      // 5. Delete teacher-subject-class assignments
+      await tx.teacherSubjectClass.deleteMany({
+        where: { teacherId: id },
+      });
+
+      // 6. Disconnect from subjects (many-to-many relationship)
       await tx.teacher.update({
         where: { id },
         data: {
@@ -627,7 +676,7 @@ export const deleteTeacher = async (
         },
       });
 
-      // 6. Finally, delete the teacher
+      // 7. Finally, delete the teacher
       await tx.teacher.delete({
         where: { id },
       });

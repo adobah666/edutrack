@@ -40,13 +40,28 @@ const TeacherSubjectClassAssignment = ({
   errors,
 }: TeacherSubjectClassAssignmentProps) => {
   // Transform existing assignments to the format we need
+  console.log('Default assignments received:', defaultAssignments); // Debug log
   const transformedAssignments = defaultAssignments.map((assignment: any) => ({
     id: assignment.id,
     subjectId: assignment.subjectId || assignment.subject?.id || 0,
     classId: assignment.classId || assignment.class?.id || 0,
   }));
+  console.log('Transformed assignments:', transformedAssignments); // Debug log
   
   const [assignments, setAssignments] = useState<TeacherSubjectClass[]>(transformedAssignments);
+
+  // Update assignments when defaultAssignments change (for edit mode)
+  useEffect(() => {
+    if (defaultAssignments.length > 0) {
+      const newTransformed = defaultAssignments.map((assignment: any) => ({
+        id: assignment.id,
+        subjectId: assignment.subjectId || assignment.subject?.id || 0,
+        classId: assignment.classId || assignment.class?.id || 0,
+      }));
+      console.log('Updating assignments from defaultAssignments:', newTransformed);
+      setAssignments(newTransformed);
+    }
+  }, [defaultAssignments]);
 
   const addAssignment = () => {
     setAssignments([...assignments, { subjectId: 0, classId: 0 }]);
@@ -92,6 +107,7 @@ const TeacherSubjectClassAssignment = ({
       {assignments.length === 0 ? (
         <div className="text-xs text-gray-400 italic p-4 border border-dashed border-gray-300 rounded-md text-center">
           No assignments yet. Click &quot;Add Assignment&quot; to assign subjects to classes.
+          <div className="text-xs text-red-500 mt-1">Debug: Received {defaultAssignments.length} default assignments</div>
         </div>
       ) : (
         <div className="space-y-3 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">

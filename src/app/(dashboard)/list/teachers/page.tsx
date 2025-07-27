@@ -182,7 +182,7 @@ const TeacherListPage = async ({
       address: item.address,
       actions: role === "admin" ? (
         <div className="flex items-center gap-2">
-          <FormContainer table="teacher" type="update" data={item} />
+          <FormContainer table="teacher" type="update" data={item} id={item.id} />
           <FormContainer table="teacher" type="delete" id={item.id} />
         </div>
       ) : null

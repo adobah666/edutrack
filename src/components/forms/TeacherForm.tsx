@@ -94,6 +94,7 @@ const TeacherForm = ({
   }, [state, router, type, setOpen]);
 
   const { subjects } = relatedData;
+  console.log('TeacherForm: Received relatedData:', relatedData); // Debug log
 
   return (
     <form

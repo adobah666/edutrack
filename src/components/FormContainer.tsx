@@ -113,6 +113,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         relatedData = { teachers: classTeachers, grades: classGrades };
         break;
       case "teacher":
+        console.log('FormContainer: Processing teacher case, id:', id, 'type:', type); // Debug log
         const [teacherSubjects, teacherClasses] = await Promise.all([
           prisma.subject.findMany({
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
@@ -127,18 +128,27 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         // If editing, fetch existing teacher-subject-class assignments
         let existingAssignments: any[] = [];
         if (id) {
-          const teacher = await prisma.teacher.findUnique({
-            where: { id: id as string },
-            include: {
-              teacherSubjectClasses: {
-                include: {
-                  subject: { select: { id: true, name: true } },
-                  class: { select: { id: true, name: true } }
+          console.log('FormContainer: Fetching teacher with ID:', id); // Debug log
+          try {
+            const teacher = await prisma.teacher.findUnique({
+              where: { id: id as string },
+              include: {
+                teacherSubjectClasses: {
+                  include: {
+                    subject: { select: { id: true, name: true } },
+                    class: { select: { id: true, name: true } }
+                  }
                 }
               }
-            }
-          });
-          existingAssignments = teacher?.teacherSubjectClasses || [];
+            });
+            console.log('FormContainer: Found teacher:', teacher ? `${teacher.name} ${teacher.surname}` : 'null'); // Debug log
+            existingAssignments = teacher?.teacherSubjectClasses || [];
+            console.log('FormContainer: Fetched existing assignments for teacher:', existingAssignments); // Debug log
+          } catch (error) {
+            console.error('FormContainer: Error fetching teacher assignments:', error); // Debug log
+          }
+        } else {
+          console.log('FormContainer: No ID provided, this is a create form'); // Debug log
         }
         
         relatedData = { 
@@ -146,6 +156,7 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           classes: teacherClasses,
           existingAssignments 
         };
+        console.log('RelatedData for teacher form:', relatedData); // Debug log
         break;
       case "student":
         const studentGrades = await prisma.grade.findMany({

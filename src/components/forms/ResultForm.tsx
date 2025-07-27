@@ -112,21 +112,41 @@ export default function ResultForm({
           const existingResults = await response.json();
           const studentsWithResults = new Set(existingResults.map((result: any) => result.studentId));
           
-          // Filter students for the selected assessment's class and exclude those who already have results
-          const classStudents = fetchedStudents.filter(student => 
+          let eligibleStudents = fetchedStudents.filter(student => 
             student.classId === selectedAssessment.classId && !studentsWithResults.has(student.id)
           );
+
+          // For exams, additionally filter by exam eligibility
+          if (assessmentType === 'exam' && selectedExamId) {
+            try {
+              const eligibilityResponse = await fetch(`/api/exams/${selectedExamId}/eligible-students`);
+              if (eligibilityResponse.ok) {
+                const eligibleStudentIds = await eligibilityResponse.json();
+                const eligibleIdSet = new Set(eligibleStudentIds.map((item: any) => item.studentId));
+                
+                // Only show students who are both in the class and eligible for the exam
+                eligibleStudents = eligibleStudents.filter(student => 
+                  eligibleIdSet.has(student.id)
+                );
+              }
+            } catch (error) {
+              console.error("Failed to fetch exam eligibility:", error);
+              // If eligibility check fails, fall back to class-based filtering
+            }
+          }
           
-          setStudents(classStudents);
+          setStudents(eligibleStudents);
           
           // Set appropriate message if no students are available
-          if (classStudents.length === 0) {
+          if (eligibleStudents.length === 0) {
             const totalClassStudents = fetchedStudents.filter(student => 
               student.classId === selectedAssessment.classId
             );
             
             if (totalClassStudents.length === 0) {
               setNoStudentsMessage(`No students found in the class for this ${assessmentName}.`);
+            } else if (assessmentType === 'exam') {
+              setNoStudentsMessage(`No eligible students found for this exam. Students may have joined the class after the exam was created, or all eligible students have already been graded.`);
             } else {
               setNoStudentsMessage(`All students in this class have already been graded for this ${assessmentName}.`);
             }

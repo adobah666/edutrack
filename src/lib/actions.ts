@@ -905,22 +905,48 @@ export const createExam = async (
       return { success: false, error: true, message: "School ID is required" };
     }
 
-    await prisma.exam.create({
-      data: {
-        title: data.title,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        term: data.term,
-        school: {
-          connect: { id: schoolId },
+    // Create the exam and capture eligible students in a transaction
+    await prisma.$transaction(async (tx) => {
+      // Create the exam
+      const exam = await tx.exam.create({
+        data: {
+          title: data.title,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          term: data.term,
+          maxPoints: data.maxPoints || 100,
+          school: {
+            connect: { id: schoolId },
+          },
+          subject: {
+            connect: { id: data.subjectId },
+          },
+          class: {
+            connect: { id: data.classId },
+          },
         },
-        subject: {
-          connect: { id: data.subjectId },
+      });
+
+      // Get all current students in the class
+      const currentStudents = await tx.student.findMany({
+        where: {
+          classId: data.classId,
+          schoolId: schoolId,
         },
-        class: {
-          connect: { id: data.classId },
+        select: {
+          id: true,
         },
-      },
+      });
+
+      // Create eligibility records for all current students
+      if (currentStudents.length > 0) {
+        await tx.examEligibleStudent.createMany({
+          data: currentStudents.map(student => ({
+            examId: exam.id,
+            studentId: student.id,
+          })),
+        });
+      }
     });
 
     // revalidatePath("/list/exams");
@@ -1516,6 +1542,24 @@ export const createResult = async (
 
     // Connect to either exam or assignment, but not both
     if (data.examId) {
+      // Check if student is eligible for this exam
+      const eligibility = await prisma.examEligibleStudent.findUnique({
+        where: {
+          examId_studentId: {
+            examId: data.examId,
+            studentId: data.studentId,
+          },
+        },
+      });
+
+      if (!eligibility) {
+        return { 
+          success: false, 
+          error: true, 
+          message: "Student is not eligible for this exam. They may have joined the class after the exam was created." 
+        };
+      }
+
       resultData.exam = {
         connect: { id: data.examId },
       };

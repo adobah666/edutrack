@@ -86,6 +86,7 @@ model Student {
   school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
   classHistory StudentClassHistory[]
+  examEligibility ExamEligibleStudent[]
 }
 
 model StudentClassHistory {
@@ -283,10 +284,24 @@ model Exam {
   subjectId Int?
   schoolId  String
   maxPoints Int      @default(100)
+  createdAt DateTime @default(now())
   class     Class?   @relation(fields: [classId], references: [id])
   school    School   @relation(fields: [schoolId], references: [id])
   subject   Subject? @relation(fields: [subjectId], references: [id])
   results   Result[]
+  eligibleStudents ExamEligibleStudent[]
+}
+
+model ExamEligibleStudent {
+  id        Int     @id @default(autoincrement())
+  examId    Int
+  studentId String
+  createdAt DateTime @default(now())
+  
+  exam      Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student   Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  
+  @@unique([examId, studentId]) // Prevent duplicate entries
 }
 
 model Assignment {

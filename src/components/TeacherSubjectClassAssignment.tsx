@@ -27,6 +27,7 @@ interface TeacherSubjectClassAssignmentProps {
   classes: Class[];
   defaultAssignments?: TeacherSubjectClass[];
   register: UseFormRegister<TeacherSchema>;
+  setValue: any; // UseFormSetValue from react-hook-form
   errors: FieldErrors<TeacherSchema>;
 }
 
@@ -35,6 +36,7 @@ const TeacherSubjectClassAssignment = ({
   classes,
   defaultAssignments = [],
   register,
+  setValue,
   errors,
 }: TeacherSubjectClassAssignmentProps) => {
   // Transform existing assignments to the format we need
@@ -60,10 +62,19 @@ const TeacherSubjectClassAssignment = ({
     setAssignments(updated);
   };
 
-  // Register the assignments with react-hook-form
+  // Register the field once
   useEffect(() => {
-    register("teacherSubjectClasses", { value: assignments });
-  }, [assignments, register]);
+    register("teacherSubjectClasses");
+  }, [register]);
+
+  // Update form value whenever assignments change
+  useEffect(() => {
+    const validAssignments = assignments.filter(assignment => assignment.subjectId > 0 && assignment.classId > 0);
+    setValue("teacherSubjectClasses", validAssignments, { 
+      shouldValidate: true,
+      shouldDirty: true 
+    });
+  }, [assignments, setValue]);
 
   return (
     <div className="flex flex-col gap-2 w-full">

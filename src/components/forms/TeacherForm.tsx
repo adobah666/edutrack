@@ -71,6 +71,8 @@ const TeacherForm = ({
         ...formData,
         img: img?.secure_url
       };
+      console.log('Submitting teacher data:', enrichedData); // Debug log
+      console.log('Teacher subject classes:', enrichedData.teacherSubjectClasses); // Debug log
       formAction(enrichedData);
     } catch (error) {
       console.error('Form submission error:', error);
@@ -265,6 +267,7 @@ const TeacherForm = ({
           classes={relatedData?.classes || []}
           defaultAssignments={relatedData?.existingAssignments || []}
           register={register}
+          setValue={setValue}
           errors={errors}
         />
         <div className="flex flex-col gap-2 w-full">

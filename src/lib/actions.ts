@@ -519,10 +519,13 @@ export const createTeacher = async (
       });
 
       // Create teacher-subject-class assignments if provided
+      console.log('Received teacherSubjectClasses:', data.teacherSubjectClasses); // Debug log
       if (data.teacherSubjectClasses && data.teacherSubjectClasses.length > 0) {
         const validAssignments = data.teacherSubjectClasses.filter(
           (assignment) => assignment.subjectId > 0 && assignment.classId > 0
         );
+        
+        console.log('Valid assignments to create:', validAssignments); // Debug log
         
         if (validAssignments.length > 0) {
           await prisma.teacherSubjectClass.createMany({
@@ -533,6 +536,7 @@ export const createTeacher = async (
             })),
             skipDuplicates: true, // Prevent duplicate assignments
           });
+          console.log('Successfully created teacher-subject-class assignments'); // Debug log
         }
       }
 

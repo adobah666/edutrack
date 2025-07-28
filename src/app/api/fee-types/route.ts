@@ -16,6 +16,15 @@ export async function GET(req: NextRequest) {
       where: {
         schoolId: schoolFilter.schoolId,
       },
+      include: {
+        classFees: {
+          include: {
+            class: {
+              select: { id: true, name: true }
+            }
+          }
+        }
+      },
       orderBy: {
         name: "asc",
       },
@@ -45,6 +54,7 @@ export async function POST(req: Request) {
     const formData = await req.formData();
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
+    const isOptional = formData.get("isOptional") === "true";
 
     if (!name) {
       return NextResponse.json(
@@ -72,6 +82,7 @@ export async function POST(req: Request) {
       data: {
         name,
         description,
+        isOptional,
         school: {
           connect: { id: schoolFilter.schoolId },
         },

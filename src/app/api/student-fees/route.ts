@@ -129,13 +129,22 @@ export async function POST(req: Request) {
   }
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const { searchParams } = new URL(req.url);
+    const studentId = searchParams.get("studentId");
+
     // Get school filter for current user
     const schoolFilter = await getSchoolFilter();
 
+    let whereClause: any = schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {};
+    
+    if (studentId) {
+      whereClause.studentId = studentId;
+    }
+
     const studentFees = await prisma.studentFee.findMany({
-      where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}, // Add school filtering
+      where: whereClause,
       include: {
         student: true,
         classFee: {

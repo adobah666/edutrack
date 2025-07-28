@@ -14,6 +14,7 @@ const feeTypeSchema = z.object({
   id: z.coerce.number().optional(),
   name: z.string().min(1, { message: "Fee type name is required!" }),
   description: z.string().optional(),
+  isOptional: z.boolean().optional(),
 });
 
 type FeeTypeSchema = z.infer<typeof feeTypeSchema>;
@@ -108,6 +109,22 @@ const FeeTypeForm = ({
               {errors.description.message.toString()}
             </p>
           )}
+        </div>
+
+        <div className="flex items-center gap-3 w-full">
+          <input
+            type="checkbox"
+            id="isOptional"
+            {...register("isOptional")}
+            defaultChecked={data?.isOptional || false}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="isOptional" className="text-sm text-gray-700">
+            <span className="font-medium">Optional Fee</span>
+            <p className="text-xs text-gray-500 mt-1">
+              Students/parents can choose to opt-in to this fee (e.g., excursion, bus transport, extra activities)
+            </p>
+          </label>
         </div>
 
         {data && (

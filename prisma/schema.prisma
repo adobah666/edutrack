@@ -46,6 +46,7 @@ model School {
   budgetItems BudgetItem[]
   gradingSchemes GradingScheme[]
   resultApprovals ResultApproval[]
+  studentFeeOptIns StudentFeeOptIn[]
 }
 
 model Admin {
@@ -88,6 +89,7 @@ model Student {
   classHistory StudentClassHistory[]
   examEligibility ExamEligibleStudent[]
   parentStudents ParentStudent[]
+  feeOptIns StudentFeeOptIn[]
 }
 
 model StudentClassHistory {
@@ -184,6 +186,7 @@ model Class {
   examClasses   ExamClass[] // New many-to-many relationship
   teacherSubjectClasses TeacherSubjectClass[]
   classScheduleOverrides ClassScheduleOverride[]
+  studentFeeOptIns StudentFeeOptIn[]
   
   @@unique([name, schoolId])
 }
@@ -402,9 +405,11 @@ model FeeType {
   id          Int        @id @default(autoincrement())
   name        String
   description String?
+  isOptional  Boolean    @default(false) // New field to mark optional fees
   schoolId    String
   classFees   ClassFee[]
   school      School     @relation(fields: [schoolId], references: [id])
+  studentOptIns StudentFeeOptIn[] // New relation for opt-ins
   
   @@unique([name, schoolId])
 }
@@ -445,6 +450,24 @@ model FeeReminder {
   schoolId     String
   school       School       @relation(fields: [schoolId], references: [id])
   studentFee   StudentFee   @relation(fields: [studentFeeId], references: [id])
+}
+
+// New model for tracking student opt-ins to optional fees
+model StudentFeeOptIn {
+  id         Int      @id @default(autoincrement())
+  studentId  String
+  feeTypeId  Int
+  classId    Int      // Which class the student was in when they opted in
+  optedInAt  DateTime @default(now())
+  optedInBy  String?  // Who opted them in (student ID or parent ID)
+  schoolId   String
+  
+  student    Student  @relation(fields: [studentId], references: [id])
+  feeType    FeeType  @relation(fields: [feeTypeId], references: [id])
+  class      Class    @relation(fields: [classId], references: [id])
+  school     School   @relation(fields: [schoolId], references: [id])
+  
+  @@unique([studentId, feeTypeId, classId]) // Prevent duplicate opt-ins
 }
 
 model StaffSalary {

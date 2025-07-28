@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getSchoolFilter } from "@/lib/school-context";
 import StudentFeesClient from "@/components/StudentFeesClient";
+import OptionalFeesManager from "@/components/OptionalFeesManager";
 
 const StudentFeesPage = async () => {
   const { userId, sessionClaims } = auth();
@@ -28,7 +29,13 @@ const StudentFeesPage = async () => {
           classFees: {
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             include: {
-              feeType: true,
+              feeType: {
+                select: {
+                  id: true,
+                  name: true,
+                  isOptional: true
+                }
+              },
               studentFees: {
                 where: { studentId: userId }
               }
@@ -36,12 +43,16 @@ const StudentFeesPage = async () => {
           }
         }
       },
-      parent: {
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          surname: true
+      parentStudents: {
+        include: {
+          parent: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              surname: true
+            }
+          }
         }
       }
     }
@@ -51,8 +62,12 @@ const StudentFeesPage = async () => {
     redirect("/");
   }
 
-  // Calculate fee status for each class fee
-  const feesWithStatus = student.class.classFees.map(classFee => {
+  // Separate mandatory and optional fees
+  const mandatoryFees = student.class.classFees.filter(classFee => !classFee.feeType.isOptional);
+  const optionalFees = student.class.classFees.filter(classFee => classFee.feeType.isOptional);
+
+  // Calculate fee status for mandatory fees only
+  const feesWithStatus = mandatoryFees.map(classFee => {
     const totalPaid = classFee.studentFees.reduce((sum, fee) => sum + fee.amount, 0);
     const remainingAmount = classFee.amount - totalPaid;
     const isPaid = remainingAmount <= 0;
@@ -89,10 +104,21 @@ const StudentFeesPage = async () => {
             name: student.name,
             surname: student.surname,
             className: student.class.name,
-            email: student.parent?.email || `${student.username}@school.edu`
+            email: student.parentStudents[0]?.parent?.email || `${student.username}@school.edu`
           }}
           fees={feesWithStatus}
         />
+
+        <div className="mt-6">
+          <OptionalFeesManager 
+            studentId={student.id}
+            currentClassId={student.classId}
+            isParentView={false}
+            studentName={`${student.name} ${student.surname}`}
+            studentEmail={student.parentStudents[0]?.parent?.email || `${student.username}@school.edu`}
+            className={student.class.name}
+          />
+        </div>
       </div>
     </div>
   );

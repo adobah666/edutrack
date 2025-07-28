@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getSchoolFilter } from "@/lib/school-context";
 import ParentFeesClient from "@/components/ParentFeesClient";
+import OptionalFeesManager from "@/components/OptionalFeesManager";
 
 const ParentFeesPage = async () => {
   const { userId, sessionClaims } = auth();
@@ -23,16 +24,23 @@ const ParentFeesPage = async () => {
   const parent = await prisma.parent.findUnique({
     where: { id: userId },
     include: {
-      students: {
-        where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
-        include: {
-          class: {
+      parentStudents: {
+        where: schoolFilter.schoolId ? { student: { schoolId: schoolFilter.schoolId } } : {},
             include: {
-              classFees: {
-                where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
                 include: {
-                  feeType: true,
-                  studentFees: true
+                  classFees: {
+                    where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
+                    include: {
+                      feeType: {
+                        select: {
+                          id: true,
+                          name: true,
+                          isOptional: true
+                        }
+                      },
+                      studentFees: true
+                    }
+                  }
                 }
               }
             }
@@ -47,8 +55,11 @@ const ParentFeesPage = async () => {
   }
 
   // Process children's fees
-  const childrenWithFees = parent.students.map(student => {
-    const feesWithStatus = student.class.classFees.map(classFee => {
+  const childrenWithFees = parent.parentStudents.map(({ student }) => {
+    // Separate mandatory and optional fees
+    const mandatoryFees = student.class.classFees.filter(classFee => !classFee.feeType.isOptional);
+    
+    const feesWithStatus = mandatoryFees.map(classFee => {
       const totalPaid = classFee.studentFees
         .filter(fee => fee.studentId === student.id)
         .reduce((sum, fee) => sum + fee.amount, 0);
@@ -101,6 +112,25 @@ const ParentFeesPage = async () => {
           }}
           studentChildren={childrenWithFees}
         />
+
+        {/* Optional Fees for each child */}
+        <div className="mt-6 space-y-6">
+          {childrenWithFees.map((child) => (
+            <div key={child.id}>
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                Optional Fees for {child.name} {child.surname} ({child.className})
+              </h2>
+              <OptionalFeesManager 
+                studentId={child.id}
+                currentClassId={parent.parentStudents.find(ps => ps.student.id === child.id)?.student.classId || 0}
+                isParentView={true}
+                studentName={`${child.name} ${child.surname}`}
+                studentEmail={parent.email || `${parent.username}@parent.edu`}
+                className={child.className}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

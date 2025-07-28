@@ -2,13 +2,24 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
-import PaystackPayment from "@/components/PaystackPayment";
+import { useEffect, useState } from "react";
+import dynamic from "next/dynamic";
+
+// Dynamically import PaystackPayment to avoid SSR issues
+const PaystackPayment = dynamic(() => import("@/components/PaystackPayment"), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-10 rounded-lg"></div>
+});
 
 const TestPaymentPage = () => {
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const role = user?.publicMetadata?.role as string;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (isLoaded && (!user || role !== "admin")) {
@@ -16,7 +27,7 @@ const TestPaymentPage = () => {
     }
   }, [user, isLoaded, role, router]);
 
-  if (!isLoaded) {
+  if (!isLoaded || !isClient) {
     return <div>Loading...</div>;
   }
 

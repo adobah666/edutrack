@@ -1,8 +1,14 @@
 'use client';
 
-import { PaystackButton } from 'react-paystack';
-import { useState } from 'react';
+import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+
+// Dynamically import PaystackButton to avoid SSR issues
+const PaystackButton = dynamic(() => import('react-paystack').then(mod => ({ default: mod.PaystackButton })), {
+  ssr: false,
+  loading: () => <div className="animate-pulse bg-gray-200 h-10 rounded-lg"></div>
+});
 
 interface PaystackPaymentProps {
   maxAmount: number;
@@ -32,6 +38,12 @@ const PaystackPayment = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState(maxAmount);
   const [showAmountInput, setShowAmountInput] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  // Ensure we're on the client side
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const publicKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY!;
 
@@ -110,6 +122,13 @@ const PaystackPayment = ({
       setPaymentAmount(value);
     }
   };
+
+  // Don't render anything until we're on the client side
+  if (!isClient) {
+    return (
+      <div className="animate-pulse bg-gray-200 h-10 rounded-lg"></div>
+    );
+  }
 
   if (isProcessing) {
     return (

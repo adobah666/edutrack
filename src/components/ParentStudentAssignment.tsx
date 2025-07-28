@@ -212,7 +212,7 @@ const ParentStudentAssignment = ({
             <div className="flex gap-2 flex-wrap">
               {searchTerm && (
                 <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs">
-                  Name: "{searchTerm}"
+                  Name: &quot;{searchTerm}&quot;
                 </span>
               )}
               {selectedClass && (

@@ -86,7 +86,15 @@ const ParentAttendancePage = async () => {
 
       return {
         ...student,
-        classHistory
+        attendances: student.attendances.map(attendance => ({
+          ...attendance,
+          date: attendance.date.toISOString()
+        })),
+        classHistory: classHistory.map(history => ({
+          ...history,
+          startDate: history.startDate.toISOString(),
+          endDate: history.endDate ? history.endDate.toISOString() : null
+        }))
       };
     })
   );
@@ -98,7 +106,7 @@ const ParentAttendancePage = async () => {
         name: parent.name,
         surname: parent.surname
       }}
-      children={childrenWithHistory}
+      childrenData={childrenWithHistory}
     />
   );
 };

@@ -119,7 +119,7 @@ const SchoolHoursConfig = () => {
           <span className="font-medium text-blue-800">Configure School Operating Hours</span>
         </div>
         <p className="text-sm text-blue-700">
-          Set your school's opening and closing times. These hours will be used to validate lesson scheduling and display the schedule calendar.
+          Set your school&apos;s opening and closing times. These hours will be used to validate lesson scheduling and display the schedule calendar.
         </p>
         {schoolHours && (
           <p className="text-sm text-blue-600 mt-2">

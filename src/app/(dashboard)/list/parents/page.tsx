@@ -209,7 +209,7 @@ const ParentListPage = async ({
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
-                {data.reduce((acc, parent) => acc + (parent.students?.length || 0), 0)}
+                {data.reduce((acc, parent) => acc + (parent.parentStudents?.length || 0), 0)}
               </p>
               <p className="text-sm text-gray-600">Children Enrolled</p>
             </div>

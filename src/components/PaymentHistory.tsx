@@ -138,7 +138,7 @@ const PaymentHistory = ({ studentId }: PaymentHistoryProps) => {
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No Payment History</h3>
-          <p className="text-gray-500">You haven't made any payments yet.</p>
+          <p className="text-gray-500">You haven&apos;t made any payments yet.</p>
         </div>
       </div>
     );

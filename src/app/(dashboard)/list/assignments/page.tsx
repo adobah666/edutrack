@@ -87,7 +87,11 @@ const AssignmentListPage = async ({
       query.class = {
         students: {
           some: {
-            parentId: currentUserId!,
+            parentStudents: {
+              some: {
+                parentId: currentUserId!,
+              },
+            },
           },
         },
       };

@@ -46,17 +46,17 @@ interface ParentAttendanceClientProps {
     name: string;
     surname: string;
   };
-  children: Child[];
+  childrenData: Child[];
 }
 
-const ParentAttendanceClient = ({ parent, children }: ParentAttendanceClientProps) => {
+const ParentAttendanceClient = ({ parent, childrenData }: ParentAttendanceClientProps) => {
   const [selectedChild, setSelectedChild] = useState<string | null>(
-    children.length > 0 ? children[0].id : null
+    childrenData.length > 0 ? childrenData[0].id : null
   );
   const [activeTab, setActiveTab] = useState<'overview' | 'calendar' | 'history'>('overview');
   const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'term' | 'all'>('month');
 
-  const currentChild = children.find(child => child.id === selectedChild);
+  const currentChild = childrenData.find(child => child.id === selectedChild);
 
   if (!currentChild) {
     return (
@@ -165,7 +165,7 @@ const ParentAttendanceClient = ({ parent, children }: ParentAttendanceClientProp
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Children's Attendance</h1>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Children&apos;s Attendance</h1>
               <p className="text-gray-600">
                 {parent.name} {parent.surname} - Parent Dashboard
               </p>
@@ -184,7 +184,7 @@ const ParentAttendanceClient = ({ parent, children }: ParentAttendanceClientProp
           <div className="flex items-center gap-4">
             <span className="text-sm font-medium text-gray-700">Select Child:</span>
             <div className="flex gap-2">
-              {children.map((child) => {
+              {childrenData.map((child) => {
                 const childTotalDays = child.attendances.length;
                 const childPresentDays = child.attendances.filter(record => record.present).length;
                 const childRate = childTotalDays > 0 ? Math.round((childPresentDays / childTotalDays) * 100) : 0;

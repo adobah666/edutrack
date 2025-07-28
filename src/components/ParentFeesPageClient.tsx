@@ -64,9 +64,9 @@ const ParentFeesPageClient = ({ parent, studentChildren }: ParentFeesPageClientP
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto p-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Children's School Fees</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Children&apos;s School Fees</h1>
             <p className="text-gray-600">
-              View and pay your children's school fees online using Paystack
+              View and pay your children&apos;s school fees online using Paystack
             </p>
           </div>
           
@@ -85,9 +85,9 @@ const ParentFeesPageClient = ({ parent, studentChildren }: ParentFeesPageClientP
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto p-6">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Children's School Fees</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Children&apos;s School Fees</h1>
           <p className="text-gray-600">
-            View and pay your children's school fees online using Paystack
+            View and pay your children&apos;s school fees online using Paystack
           </p>
         </div>
 

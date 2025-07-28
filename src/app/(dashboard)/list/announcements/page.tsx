@@ -50,7 +50,7 @@ const AnnouncementListPage = async ({
   const roleConditions = {
     teacher: { lessons: { some: { teacherId: currentUserId! } } },
     student: { students: { some: { id: currentUserId! } } },
-    parent: { students: { some: { parentId: currentUserId! } } },
+    parent: { students: { some: { parentStudents: { some: { parentId: currentUserId! } } } } },
   };
 
   // For admin, we don't add any class filtering conditions

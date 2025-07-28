@@ -297,7 +297,7 @@ const StudentListPage = async ({
             </div>
             <div>
               <p className="text-2xl font-bold text-gray-800">
-                {sortedData.filter(s => s.parent).length}
+                {sortedData.filter(s => s.parentStudents && s.parentStudents.length > 0).length}
               </p>
               <p className="text-sm text-gray-600">With Parents</p>
             </div>

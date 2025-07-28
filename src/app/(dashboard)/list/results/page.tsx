@@ -156,7 +156,11 @@ const ResultListPage = async ({
       break;
     case "parent":
       query.student = {
-        parentId: currentUserId!,
+        parentStudents: {
+          some: {
+            parentId: currentUserId!,
+          },
+        },
       };
       break;
     default:

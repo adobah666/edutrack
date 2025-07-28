@@ -50,7 +50,13 @@ const AttendancePage = async ({
   } else if (role === "student") {
     baseQuery.studentId = userId;
   } else if (role === "parent") {
-    baseQuery.student = { parentId: userId };
+    baseQuery.student = { 
+      parentStudents: {
+        some: {
+          parentId: userId
+        }
+      }
+    };
   }
 
   console.log('Fetching attendance with query:', JSON.stringify(baseQuery, null, 2));

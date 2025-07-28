@@ -24,6 +24,7 @@ const PaymentHistoryPage = async ({
     where: { id: params.studentId },
     include: {
       class: true,
+      parentStudents: true,
     },
   });
 
@@ -32,7 +33,7 @@ const PaymentHistoryPage = async ({
   }
 
   // Verify if the user has access to this student's data
-  if (role === "parent" && student.parentId !== currentUserId) {
+  if (role === "parent" && !student.parentStudents.some(ps => ps.parentId === currentUserId)) {
     return { redirect: { destination: "/fees", permanent: false } };
   }
 

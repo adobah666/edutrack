@@ -119,7 +119,15 @@ const AssignmentDetailPage = async ({
 
   return (
     <AssignmentDetailClient 
-      assignment={assignment}
+      assignment={{
+        ...assignment,
+        startDate: assignment.startDate.toISOString(),
+        dueDate: assignment.dueDate.toISOString(),
+        teacher: {
+          ...assignment.teacher,
+          email: assignment.teacher.email || undefined
+        }
+      }}
       userRole={role}
       currentUserId={userId}
       studentResult={studentResult}

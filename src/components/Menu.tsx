@@ -147,7 +147,19 @@ const menuItems = [
 			  icon: "/attendance.png",
 			  label: "Attendance",
 			  href: "/list/attendance",
-			  visible: ["admin", "teacher", "student", "parent"],
+			  visible: ["admin", "teacher"],
+			},
+			{
+			  icon: "/attendance.png",
+			  label: "My Attendance",
+			  href: "/student/attendance",
+			  visible: ["student"],
+			},
+			{
+			  icon: "/attendance.png",
+			  label: "Children's Attendance",
+			  href: "/parent/attendance",
+			  visible: ["parent"],
 			},
 			{
 				icon: "/calendar.png",

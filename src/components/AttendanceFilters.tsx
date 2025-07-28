@@ -12,15 +12,31 @@ export default function AttendanceFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [classes, setClasses] = useState<Class[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchClasses = async () => {
       try {
+        setIsLoading(true);
         const response = await fetch('/api/classes');
-        const data = await response.json();
-        setClasses(data);
+        if (response.ok) {
+          const data = await response.json();
+          // Ensure data is an array before setting it
+          if (Array.isArray(data)) {
+            setClasses(data);
+          } else {
+            console.error("Classes data is not an array:", data);
+            setClasses([]);
+          }
+        } else {
+          console.error("Failed to fetch classes:", response.status);
+          setClasses([]);
+        }
       } catch (error) {
         console.error("Failed to fetch classes:", error);
+        setClasses([]);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -43,9 +59,10 @@ export default function AttendanceFilters() {
         className="border border-gray-300 rounded-md p-2 text-sm"
         onChange={(e) => updateSearchParams("classId", e.target.value)}
         defaultValue={searchParams.get("classId") || ""}
+        disabled={isLoading}
       >
-        <option value="">All Classes</option>
-        {classes.map(class_ => (
+        <option value="">{isLoading ? "Loading classes..." : "All Classes"}</option>
+        {Array.isArray(classes) && classes.map(class_ => (
           <option key={class_.id} value={class_.id}>
             {class_.name}
           </option>

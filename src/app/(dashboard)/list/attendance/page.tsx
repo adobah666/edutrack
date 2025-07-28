@@ -9,6 +9,7 @@ import { ITEM_PER_PAGE } from "@/lib/settings";
 import { Attendance, Prisma, Student, Class } from "@prisma/client";
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import { getSchoolFilter } from "@/lib/school-context";
 
@@ -31,8 +32,17 @@ const AttendanceListPage = async ({
 }: {
   searchParams: { [key: string]: string | undefined };
 }) => {
-  const { sessionClaims } = auth();
+  const { userId, sessionClaims } = auth();
   const role = (sessionClaims?.metadata as { role?: string })?.role;
+
+  if (!userId) {
+    redirect("/sign-in");
+  }
+
+  // Only admins and teachers can access this page
+  if (!['admin', 'teacher'].includes(role || '')) {
+    redirect("/");
+  }
 
   // Get school filter for current user
   const schoolFilter = await getSchoolFilter();

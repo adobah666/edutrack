@@ -2,8 +2,7 @@ import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { getSchoolFilter } from "@/lib/school-context";
-import StudentFeesClient from "@/components/StudentFeesClient";
-import OptionalFeesManager from "@/components/OptionalFeesManager";
+import StudentFeesPageClient from "@/components/StudentFeesPageClient";
 
 const StudentFeesPage = async () => {
   const { userId, sessionClaims } = auth();
@@ -89,38 +88,17 @@ const StudentFeesPage = async () => {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My School Fees</h1>
-          <p className="text-gray-600">
-            View and pay your school fees online using Paystack
-          </p>
-        </div>
-
-        <StudentFeesClient 
-          student={{
-            id: student.id,
-            name: student.name,
-            surname: student.surname,
-            className: student.class.name,
-            email: student.parentStudents[0]?.parent?.email || `${student.username}@school.edu`
-          }}
-          fees={feesWithStatus}
-        />
-
-        <div className="mt-6">
-          <OptionalFeesManager 
-            studentId={student.id}
-            currentClassId={student.classId}
-            isParentView={false}
-            studentName={`${student.name} ${student.surname}`}
-            studentEmail={student.parentStudents[0]?.parent?.email || `${student.username}@school.edu`}
-            className={student.class.name}
-          />
-        </div>
-      </div>
-    </div>
+    <StudentFeesPageClient 
+      student={{
+        id: student.id,
+        name: student.name,
+        surname: student.surname,
+        className: student.class.name,
+        email: student.parentStudents[0]?.parent?.email || `${student.username}@school.edu`
+      }}
+      fees={feesWithStatus}
+      currentClassId={student.classId}
+    />
   );
 };
 

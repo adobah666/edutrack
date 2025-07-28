@@ -13,6 +13,10 @@ const FeesPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
+  if (!currentUserId) {
+    throw new Error("User not authenticated");
+  }
+
   const { page, search, classId, feeTypeId, sortBy } = searchParams;
   const p = page ? parseInt(page) : 1;
 
@@ -44,8 +48,9 @@ const FeesPage = async ({
     conditions.push(Prisma.sql`EXISTS (
       SELECT 1
       FROM "Student" s
+      JOIN "ParentStudent" ps ON s.id = ps."studentId"
       WHERE s."classId" = c.id
-        AND s."parentId" = ${currentUserId}
+        AND ps."parentId" = ${currentUserId}
     )`);
   }
 

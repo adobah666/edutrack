@@ -15,6 +15,10 @@ const FeeDetailsPage = async ({
   const role = (sessionClaims?.metadata as { role?: string })?.role;
   const currentUserId = userId;
 
+  if (!currentUserId) {
+    notFound();
+  }
+
   const { page, ...queryParams } = searchParams;
   const p = page ? parseInt(page) : 1;
 
@@ -50,7 +54,11 @@ const FeeDetailsPage = async ({
   if (role === "parent") {
     query.student = {
       ...query.student,
-      parentId: currentUserId,
+      parentStudents: {
+        some: {
+          parentId: currentUserId,
+        },
+      },
     };
   }
 
@@ -59,7 +67,13 @@ const FeeDetailsPage = async ({
     prisma.student.findMany({
       where: {
         classId: classFee.classId,
-        ...(role === "parent" ? { parentId: currentUserId } : {}),
+        ...(role === "parent" ? { 
+          parentStudents: {
+            some: {
+              parentId: currentUserId,
+            },
+          },
+        } : {}),
       },
       include: {
         studentFees: {
@@ -72,7 +86,13 @@ const FeeDetailsPage = async ({
     prisma.student.count({
       where: {
         classId: classFee.classId,
-        ...(role === "parent" ? { parentId: currentUserId } : {}),
+        ...(role === "parent" ? { 
+          parentStudents: {
+            some: {
+              parentId: currentUserId,
+            },
+          },
+        } : {}),
       },
     }),
   ]);

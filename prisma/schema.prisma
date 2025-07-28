@@ -165,6 +165,9 @@ model Class {
   supervisorId  String?
   gradeId       Int
   schoolId      String
+  // Custom hours for this class (optional - falls back to school hours if null)
+  customOpeningTime String?
+  customClosingTime String?
   announcements Announcement[]
   assignments   Assignment[]
   attendances   Attendance[]
@@ -180,6 +183,7 @@ model Class {
   resultApprovals ResultApproval[]
   examClasses   ExamClass[] // New many-to-many relationship
   teacherSubjectClasses TeacherSubjectClass[]
+  classScheduleOverrides ClassScheduleOverride[]
   
   @@unique([name, schoolId])
 }
@@ -704,6 +708,19 @@ model TeacherSubjectClass {
   class     Class   @relation(fields: [classId], references: [id], onDelete: Cascade)
   
   @@unique([teacherId, subjectId, classId]) // Prevent duplicate assignments
+}
+
+// Day-specific schedule overrides for classes
+model ClassScheduleOverride {
+  id          Int    @id @default(autoincrement())
+  classId     Int
+  dayOfWeek   Day    // MONDAY, TUESDAY, etc.
+  openingTime String // Custom opening time for this day
+  closingTime String // Custom closing time for this day
+  
+  class       Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  
+  @@unique([classId, dayOfWeek])
 }
 
 // Junction table for Parent-Student relationships with relationship type

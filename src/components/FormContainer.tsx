@@ -62,7 +62,13 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           prisma.class.findMany({
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
-            select: { id: true, name: true },
+            select: { 
+              id: true, 
+              name: true, 
+              customOpeningTime: true, 
+              customClosingTime: true,
+              classScheduleOverrides: true
+            },
           }),
           prisma.teacher.findMany({
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},

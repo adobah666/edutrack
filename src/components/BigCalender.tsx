@@ -26,8 +26,8 @@ const TimeHeader = ({ schoolHours }: { schoolHours?: { openingTime: string; clos
         Day
       </div>
       {hours.map((hour) => (
-        <div key={hour} className="flex-1 p-3 text-center font-semibold text-gray-600 border-l border-gray-200">
-          {`${hour}:00`}
+        <div key={hour} className="flex-1 p-2 text-center font-semibold text-gray-600 border-l border-gray-200 min-w-[60px]">
+          <span className="text-xs">{`${hour}:00`}</span>
         </div>
       ))}
     </div>
@@ -77,7 +77,6 @@ const EventCell = ({ event, colSpan, isAdmin }: { event: Event; colSpan: number;
   return (
     <div 
       className={`${getEventColor(event.title)} rounded-lg p-2 h-full relative group shadow-sm hover:shadow-md transition-all duration-200 border border-white/20`}
-      style={{ gridColumn: `span ${colSpan}` }}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
@@ -116,17 +115,27 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
     const slots: (Event | null)[] = new Array(dayHours.length).fill(null);
     
     events.forEach(event => {
-      const startHour = new Date(event.start).getHours();
-      const endHour = new Date(event.end).getHours();
+      const startDate = new Date(event.start);
+      const endDate = new Date(event.end);
+      const startHour = startDate.getHours();
+      const endHour = endDate.getHours();
+      
+      // Find the starting position in our hours array
       const startIndex = dayHours.indexOf(startHour);
       
       if (startIndex !== -1) {
-        // Calculate how many slots this event should span
-        const duration = Math.min(endHour - startHour, dayHours.length - startIndex);
+        // Calculate duration in hours (minimum 1 hour)
+        let duration = Math.max(1, endHour - startHour);
         
-        // Mark all slots that this event spans
-        for (let i = 0; i < duration; i++) {
-          slots[startIndex + i] = i === 0 ? event : null;
+        // Ensure we don't exceed the available slots
+        duration = Math.min(duration, dayHours.length - startIndex);
+        
+        // Place the event in the first slot and mark subsequent slots as occupied
+        slots[startIndex] = event;
+        for (let i = 1; i < duration; i++) {
+          if (startIndex + i < slots.length) {
+            slots[startIndex + i] = 'occupied' as any; // Mark as occupied but not the event itself
+          }
         }
       }
     });
@@ -136,7 +145,7 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-      <div className="min-w-[800px]">
+      <div className="min-w-[1000px] overflow-x-auto">
         <TimeHeader schoolHours={schoolHours} />
         <div className="divide-y divide-gray-200">
           {days.map((day, dayIndex) => {
@@ -150,17 +159,29 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
                 </div>
                 <div className="flex-1 grid gap-1 p-1" style={{ gridTemplateColumns: `repeat(${hours.length}, 1fr)` }}>
                   {hourSlots.map((slot, index) => {
-                    if (slot === null) return (
-                      <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] hover:bg-blue-50/30 transition-colors duration-150" />
-                    );
+                    // Empty slot
+                    if (slot === null) {
+                      return (
+                        <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] hover:bg-blue-50/30 transition-colors duration-150" />
+                      );
+                    }
                     
-                    const endHour = new Date(slot.end).getHours();
-                    const startHour = new Date(slot.start).getHours();
-                    const colSpan = Math.min(endHour - startHour, hours.length - index);
+                    // Occupied slot (part of a multi-hour event)
+                    if (slot === 'occupied') {
+                      return (
+                        <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px]" />
+                      );
+                    }
+                    
+                    // Event slot
+                    const event = slot as Event;
+                    const endHour = new Date(event.end).getHours();
+                    const startHour = new Date(event.start).getHours();
+                    const colSpan = Math.max(1, Math.min(endHour - startHour, hours.length - index));
                     
                     return (
-                      <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] p-1">
-                        <EventCell event={slot} colSpan={colSpan} isAdmin={isAdmin} />
+                      <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] p-1" style={{ gridColumn: `span ${colSpan}` }}>
+                        <EventCell event={event} colSpan={1} isAdmin={isAdmin} />
                       </div>
                     );
                   })}

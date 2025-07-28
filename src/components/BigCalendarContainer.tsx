@@ -60,20 +60,52 @@ export default function BigCalenderContainer({
         }
       }
 
-      // Fetch school hours
+      // Fetch school hours (class-specific or general)
       try {
-        const schoolRes = await fetch("/api/school/hours", {
-          cache: 'no-store'
-        });
-        if (schoolRes.ok) {
-          const schoolData = await schoolRes.json();
-          if (schoolData.openingTime && schoolData.closingTime) {
-            setSchoolHours({
-              openingTime: schoolData.openingTime,
-              closingTime: schoolData.closingTime
-            });
+        let effectiveHours = { openingTime: "08:00", closingTime: "17:00" };
+        
+        // If viewing a specific class, get class-specific hours
+        if (type === "classId") {
+          const classRes = await fetch(`/api/classes/${id}`, {
+            cache: 'no-store'
+          });
+          if (classRes.ok) {
+            const classData = await classRes.json();
+            // Use class custom hours if available, otherwise fall back to school hours
+            if (classData.customOpeningTime && classData.customClosingTime) {
+              effectiveHours = {
+                openingTime: classData.customOpeningTime,
+                closingTime: classData.customClosingTime
+              };
+            } else {
+              // Fall back to general school hours
+              const schoolRes = await fetch("/api/school/hours", {
+                cache: 'no-store'
+              });
+              if (schoolRes.ok) {
+                const schoolData = await schoolRes.json();
+                effectiveHours = {
+                  openingTime: schoolData.openingTime || "08:00",
+                  closingTime: schoolData.closingTime || "17:00"
+                };
+              }
+            }
+          }
+        } else {
+          // For teacher view, use general school hours
+          const schoolRes = await fetch("/api/school/hours", {
+            cache: 'no-store'
+          });
+          if (schoolRes.ok) {
+            const schoolData = await schoolRes.json();
+            effectiveHours = {
+              openingTime: schoolData.openingTime || "08:00",
+              closingTime: schoolData.closingTime || "17:00"
+            };
           }
         }
+        
+        setSchoolHours(effectiveHours);
       } catch {
         // Use default hours if fetching fails
         setSchoolHours({ openingTime: "08:00", closingTime: "17:00" });
@@ -133,6 +165,22 @@ export default function BigCalenderContainer({
       window.removeEventListener('school-hours-updated', handleSchoolHoursUpdate as EventListener);
     };
   }, [fetchData]);
+
+  // Listen for class hours updates
+  useEffect(() => {
+    const handleClassHoursUpdate = (event: CustomEvent) => {
+      const { classId } = event.detail;
+      // If this calendar is showing the updated class, refresh
+      if (type === "classId" && parseInt(classId) === parseInt(id.toString())) {
+        fetchData();
+      }
+    };
+
+    window.addEventListener('class-hours-updated', handleClassHoursUpdate as EventListener);
+    return () => {
+      window.removeEventListener('class-hours-updated', handleClassHoursUpdate as EventListener);
+    };
+  }, [fetchData, type, id]);
 
   if (error) {
     return (

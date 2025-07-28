@@ -1,6 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import SchoolHoursConfig from "@/components/SchoolHoursConfig";
+import AdvancedSchoolHoursConfig from "@/components/AdvancedSchoolHoursConfig";
 
 const AdminSettingsPage = async () => {
   const { userId, sessionClaims } = auth();
@@ -21,7 +21,7 @@ const AdminSettingsPage = async () => {
         </div>
 
         {/* School Hours Configuration */}
-        <SchoolHoursConfig />
+        <AdvancedSchoolHoursConfig />
 
         {/* Payment Security Section */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">

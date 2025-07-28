@@ -21,9 +21,14 @@ const LessonForm = ({
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: any;
 }) => {
+  // Extract relatedData first
+  const { subjects = [], classes = [], teachers = [], schoolHours = { openingTime: "08:00", closingTime: "17:00" } } = relatedData || {};
+
   const [selectedSubjectId, setSelectedSubjectId] = useState(data?.subjectId || "");
+  const [selectedClassId, setSelectedClassId] = useState(data?.classId || "");
   const [startTime, setStartTime] = useState(data?.startTime || "09:00");
   const [endTime, setEndTime] = useState(data?.endTime || "10:00");
+  const [currentSchoolHours, setCurrentSchoolHours] = useState(schoolHours);
 
   const {
     register,
@@ -76,7 +81,33 @@ const LessonForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  const { subjects = [], classes = [], teachers = [], schoolHours = { openingTime: "08:00", closingTime: "17:00" } } = relatedData || {};
+  // Initialize class hours when form loads or class changes
+  useEffect(() => {
+    if (selectedClassId) {
+      const effectiveHours = getEffectiveHours(selectedClassId);
+      setCurrentSchoolHours(effectiveHours);
+    } else {
+      setCurrentSchoolHours(schoolHours);
+    }
+  }, [selectedClassId, classes, schoolHours]);
+
+  // Function to get effective hours for a class
+  const getEffectiveHours = (classId: string) => {
+    if (!classId) return schoolHours;
+    
+    const selectedClass = classes.find((cls: any) => cls.id.toString() === classId);
+    if (!selectedClass) return schoolHours;
+    
+    // Use class custom hours if available, otherwise fall back to school hours
+    if (selectedClass.customOpeningTime && selectedClass.customClosingTime) {
+      return {
+        openingTime: selectedClass.customOpeningTime,
+        closingTime: selectedClass.customClosingTime
+      };
+    }
+    
+    return schoolHours;
+  };
 
   // Filter teachers based on selected subject
   const filteredTeachers = useMemo(() => {
@@ -89,14 +120,14 @@ const LessonForm = ({
     );
   }, [teachers, selectedSubjectId]);
 
-  // Validate time against school hours
+  // Validate time against current effective hours
   const validateTime = (time: string, type: 'start' | 'end') => {
     const timeValue = parseInt(time.replace(':', ''));
-    const openingValue = parseInt(schoolHours.openingTime.replace(':', ''));
-    const closingValue = parseInt(schoolHours.closingTime.replace(':', ''));
+    const openingValue = parseInt(currentSchoolHours.openingTime.replace(':', ''));
+    const closingValue = parseInt(currentSchoolHours.closingTime.replace(':', ''));
     
     if (timeValue < openingValue || timeValue > closingValue) {
-      return `${type === 'start' ? 'Start' : 'End'} time must be between ${schoolHours.openingTime} and ${schoolHours.closingTime} (school hours)`;
+      return `${type === 'start' ? 'Start' : 'End'} time must be between ${currentSchoolHours.openingTime} and ${currentSchoolHours.closingTime} (${selectedClassId ? 'class hours' : 'school hours'})`;
     }
     return null;
   };
@@ -109,6 +140,17 @@ const LessonForm = ({
     
     // Reset teacher selection when subject changes
     setValue("teacherId", "");
+  };
+
+  // Handle class change
+  const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newClassId = e.target.value;
+    setSelectedClassId(newClassId);
+    setValue("classId", newClassId);
+    
+    // Update school hours based on selected class
+    const effectiveHours = getEffectiveHours(newClassId);
+    setCurrentSchoolHours(effectiveHours);
   };
 
   // Handle time changes with validation
@@ -187,7 +229,8 @@ const LessonForm = ({
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("classId")}
-            defaultValue={data?.classId}
+            value={selectedClassId}
+            onChange={handleClassChange}
           >
             <option value="">Select a class</option>
             {classes.map((cls: { id: number; name: string }) => (
@@ -269,7 +312,7 @@ const LessonForm = ({
           <label className="text-xs text-gray-500">
             Start Time
             <span className="text-blue-500 ml-1">
-              (School hours: {schoolHours.openingTime} - {schoolHours.closingTime})
+              ({selectedClassId ? 'Class hours' : 'School hours'}: {currentSchoolHours.openingTime} - {currentSchoolHours.closingTime})
             </span>
           </label>
           <input
@@ -278,8 +321,8 @@ const LessonForm = ({
             {...register("startTime")}
             value={startTime}
             onChange={handleStartTimeChange}
-            min={schoolHours.openingTime}
-            max={schoolHours.closingTime}
+            min={currentSchoolHours.openingTime}
+            max={currentSchoolHours.closingTime}
           />
           {errors.startTime?.message && (
             <p className="text-xs text-red-400">
@@ -292,7 +335,7 @@ const LessonForm = ({
           <label className="text-xs text-gray-500">
             End Time
             <span className="text-blue-500 ml-1">
-              (School hours: {schoolHours.openingTime} - {schoolHours.closingTime})
+              ({selectedClassId ? 'Class hours' : 'School hours'}: {currentSchoolHours.openingTime} - {currentSchoolHours.closingTime})
             </span>
           </label>
           <input
@@ -301,8 +344,8 @@ const LessonForm = ({
             {...register("endTime")}
             value={endTime}
             onChange={handleEndTimeChange}
-            min={schoolHours.openingTime}
-            max={schoolHours.closingTime}
+            min={currentSchoolHours.openingTime}
+            max={currentSchoolHours.closingTime}
           />
           {errors.endTime?.message && (
             <p className="text-xs text-red-400">

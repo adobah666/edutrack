@@ -14,6 +14,8 @@ model School {
   phone       String?
   email       String?
   logo        String?
+  openingTime String   @default("08:00") // School opening time (HH:MM format)
+  closingTime String   @default("17:00") // School closing time (HH:MM format)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   

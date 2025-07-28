@@ -24,6 +24,8 @@ export async function GET() {
         phone: true,
         email: true,
         logo: true,
+        openingTime: true,
+        closingTime: true,
       },
     });
 

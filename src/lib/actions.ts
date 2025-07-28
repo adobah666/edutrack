@@ -1116,6 +1116,37 @@ export const createLesson = async (
       return { success: false, error: true, message: "School ID is required" };
     }
 
+    // Get school hours for validation
+    const school = await prisma.school.findUnique({
+      where: { id: schoolId },
+      select: { openingTime: true, closingTime: true }
+    });
+
+    const schoolHours = school || { openingTime: "08:00", closingTime: "17:00" };
+
+    // Validate lesson times against school hours
+    const validateTimeAgainstSchoolHours = (time: string, type: 'start' | 'end') => {
+      const timeValue = parseInt(time.replace(':', ''));
+      const openingValue = parseInt(schoolHours.openingTime.replace(':', ''));
+      const closingValue = parseInt(schoolHours.closingTime.replace(':', ''));
+      
+      if (timeValue < openingValue || timeValue > closingValue) {
+        return `❌ SCHOOL HOURS VIOLATION: ${type === 'start' ? 'Start' : 'End'} time (${time}) is outside school operating hours (${schoolHours.openingTime} - ${schoolHours.closingTime}). Please schedule lessons within school hours.`;
+      }
+      return null;
+    };
+
+    // Validate start and end times
+    const startTimeError = validateTimeAgainstSchoolHours(data.startTime, 'start');
+    if (startTimeError) {
+      return { success: false, error: true, message: startTimeError };
+    }
+
+    const endTimeError = validateTimeAgainstSchoolHours(data.endTime, 'end');
+    if (endTimeError) {
+      return { success: false, error: true, message: endTimeError };
+    }
+
     // Create ISO DateTime strings for start and end times by combining today's date with input times
     const [startHour, startMinute] = data.startTime.split(":");
     const [endHour, endMinute] = data.endTime.split(":");

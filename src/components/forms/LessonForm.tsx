@@ -6,7 +6,7 @@ import InputField from "../InputField";
 import { lessonSchema, LessonSchema } from "@/lib/formValidationSchemas";
 import { createLesson, updateLesson } from "@/lib/actions";
 import { useFormState } from "react-dom";
-import { Dispatch, SetStateAction, useEffect } from "react";
+import { Dispatch, SetStateAction, useEffect, useState, useMemo } from "react";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 
@@ -21,10 +21,16 @@ const LessonForm = ({
   setOpen: Dispatch<SetStateAction<boolean>>;
   relatedData?: any;
 }) => {
+  const [selectedSubjectId, setSelectedSubjectId] = useState(data?.subjectId || "");
+  const [startTime, setStartTime] = useState(data?.startTime || "09:00");
+  const [endTime, setEndTime] = useState(data?.endTime || "10:00");
+
   const {
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
+    watch,
   } = useForm<LessonSchema>({
     resolver: zodResolver(lessonSchema),
     defaultValues: {
@@ -70,7 +76,63 @@ const LessonForm = ({
     }
   }, [state, router, type, setOpen]);
 
-  const { subjects = [], classes = [], teachers = [] } = relatedData || {};
+  const { subjects = [], classes = [], teachers = [], schoolHours = { openingTime: "08:00", closingTime: "17:00" } } = relatedData || {};
+
+  // Filter teachers based on selected subject
+  const filteredTeachers = useMemo(() => {
+    if (!selectedSubjectId) return teachers;
+    
+    return teachers.filter((teacher: any) => 
+      teacher.teacherSubjectClasses.some((assignment: any) => 
+        assignment.subjectId.toString() === selectedSubjectId
+      )
+    );
+  }, [teachers, selectedSubjectId]);
+
+  // Validate time against school hours
+  const validateTime = (time: string, type: 'start' | 'end') => {
+    const timeValue = parseInt(time.replace(':', ''));
+    const openingValue = parseInt(schoolHours.openingTime.replace(':', ''));
+    const closingValue = parseInt(schoolHours.closingTime.replace(':', ''));
+    
+    if (timeValue < openingValue || timeValue > closingValue) {
+      return `${type === 'start' ? 'Start' : 'End'} time must be between ${schoolHours.openingTime} and ${schoolHours.closingTime} (school hours)`;
+    }
+    return null;
+  };
+
+  // Handle subject change
+  const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSubjectId = e.target.value;
+    setSelectedSubjectId(newSubjectId);
+    setValue("subjectId", newSubjectId);
+    
+    // Reset teacher selection when subject changes
+    setValue("teacherId", "");
+  };
+
+  // Handle time changes with validation
+  const handleStartTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartTime = e.target.value;
+    setStartTime(newStartTime);
+    setValue("startTime", newStartTime);
+    
+    const error = validateTime(newStartTime, 'start');
+    if (error) {
+      toast.error(error);
+    }
+  };
+
+  const handleEndTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newEndTime = e.target.value;
+    setEndTime(newEndTime);
+    setValue("endTime", newEndTime);
+    
+    const error = validateTime(newEndTime, 'end');
+    if (error) {
+      toast.error(error);
+    }
+  };
 
   return (
     <form className="flex flex-col gap-8" onSubmit={onSubmit}>
@@ -103,7 +165,8 @@ const LessonForm = ({
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("subjectId")}
-            defaultValue={data?.subjectId}
+            value={selectedSubjectId}
+            onChange={handleSubjectChange}
           >
             <option value="">Select a subject</option>
             {subjects.map((subject: { id: number; name: string }) => (
@@ -141,14 +204,28 @@ const LessonForm = ({
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/3">
-          <label className="text-xs text-gray-500">Teacher</label>
+          <label className="text-xs text-gray-500">
+            Teacher
+            {selectedSubjectId && (
+              <span className="text-blue-500 ml-1">
+                (Only teachers assigned to selected subject)
+              </span>
+            )}
+          </label>
           <select
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("teacherId")}
             defaultValue={data?.teacherId}
           >
-            <option value="">Select a teacher</option>
-            {teachers.map(
+            <option value="">
+              {selectedSubjectId 
+                ? filteredTeachers.length === 0 
+                  ? "No teachers assigned to this subject" 
+                  : "Select a teacher"
+                : "Select a subject first"
+              }
+            </option>
+            {filteredTeachers.map(
               (teacher: { id: string; name: string; surname: string }) => (
                 <option key={teacher.id} value={teacher.id}>
                   {teacher.name} {teacher.surname}
@@ -159,6 +236,11 @@ const LessonForm = ({
           {errors.teacherId?.message && (
             <p className="text-xs text-red-400">
               {errors.teacherId.message.toString()}
+            </p>
+          )}
+          {selectedSubjectId && filteredTeachers.length === 0 && (
+            <p className="text-xs text-orange-500">
+              No teachers are assigned to teach this subject. Please assign teachers to subjects first.
             </p>
           )}
         </div>
@@ -184,12 +266,20 @@ const LessonForm = ({
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/3">
-          <label className="text-xs text-gray-500">Start Time</label>
+          <label className="text-xs text-gray-500">
+            Start Time
+            <span className="text-blue-500 ml-1">
+              (School hours: {schoolHours.openingTime} - {schoolHours.closingTime})
+            </span>
+          </label>
           <input
             type="time"
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("startTime")}
-            defaultValue={data?.startTime || "09:00"}
+            value={startTime}
+            onChange={handleStartTimeChange}
+            min={schoolHours.openingTime}
+            max={schoolHours.closingTime}
           />
           {errors.startTime?.message && (
             <p className="text-xs text-red-400">
@@ -199,12 +289,20 @@ const LessonForm = ({
         </div>
 
         <div className="flex flex-col gap-2 w-full md:w-1/3">
-          <label className="text-xs text-gray-500">End Time</label>
+          <label className="text-xs text-gray-500">
+            End Time
+            <span className="text-blue-500 ml-1">
+              (School hours: {schoolHours.openingTime} - {schoolHours.closingTime})
+            </span>
+          </label>
           <input
             type="time"
             className="ring-[1.5px] ring-gray-300 p-2 rounded-md text-sm w-full"
             {...register("endTime")}
-            defaultValue={data?.endTime || "10:00"}
+            value={endTime}
+            onChange={handleEndTimeChange}
+            min={schoolHours.openingTime}
+            max={schoolHours.closingTime}
           />
           {errors.endTime?.message && (
             <p className="text-xs text-red-400">

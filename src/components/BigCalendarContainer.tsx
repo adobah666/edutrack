@@ -17,6 +17,7 @@ export default function BigCalenderContainer({
 }) {
   const [schedule, setSchedule] = useState<Event[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
+  const [schoolHours, setSchoolHours] = useState<{ openingTime: string; closingTime: string }>({ openingTime: "08:00", closingTime: "17:00" });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useUser();
@@ -58,6 +59,25 @@ export default function BigCalenderContainer({
           setClasses([]);
         }
       }
+
+      // Fetch school hours
+      try {
+        const schoolRes = await fetch("/api/school/hours", {
+          cache: 'no-store'
+        });
+        if (schoolRes.ok) {
+          const schoolData = await schoolRes.json();
+          if (schoolData.openingTime && schoolData.closingTime) {
+            setSchoolHours({
+              openingTime: schoolData.openingTime,
+              closingTime: schoolData.closingTime
+            });
+          }
+        }
+      } catch {
+        // Use default hours if fetching fails
+        setSchoolHours({ openingTime: "08:00", closingTime: "17:00" });
+      }
     } catch (err) {
       setError("Failed to load schedule");
       console.error(err);
@@ -85,14 +105,7 @@ export default function BigCalenderContainer({
     };
   }, [fetchData]);
 
-  // Set up periodic refresh every 30 seconds
-  useEffect(() => {
-    const intervalId = setInterval(fetchData, 30000);
-    
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [fetchData]);
+  // Removed automatic refresh - only refresh on form submission or manual updates
 
   // Listen for lesson updates
   useEffect(() => {
@@ -103,6 +116,21 @@ export default function BigCalenderContainer({
     window.addEventListener('lesson-updated', handleLessonUpdate);
     return () => {
       window.removeEventListener('lesson-updated', handleLessonUpdate);
+    };
+  }, [fetchData]);
+
+  // Listen for school hours updates
+  useEffect(() => {
+    const handleSchoolHoursUpdate = (event: CustomEvent) => {
+      const { openingTime, closingTime } = event.detail;
+      setSchoolHours({ openingTime, closingTime });
+      // Also refresh the data to ensure everything is in sync
+      fetchData();
+    };
+
+    window.addEventListener('school-hours-updated', handleSchoolHoursUpdate as EventListener);
+    return () => {
+      window.removeEventListener('school-hours-updated', handleSchoolHoursUpdate as EventListener);
     };
   }, [fetchData]);
 
@@ -127,7 +155,7 @@ export default function BigCalenderContainer({
       {type === "classId" && classes.length > 0 && (
         <ScheduleClassFilter classes={classes} currentClassId={Number(id)} />
       )}
-      <BigCalender data={schedule} isAdmin={isAdmin} />
+      <BigCalender data={schedule} isAdmin={isAdmin} schoolHours={schoolHours} />
     </div>
   );
 }

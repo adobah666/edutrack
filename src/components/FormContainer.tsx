@@ -52,8 +52,8 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
         relatedData = { teachers: subjectTeachers };
         break;
       case "lesson":
-        // Fetch subjects, classes and teachers for dropdowns 
-        const [lessonSubjects, lessonClasses, lessonTeachers] = await Promise.all([
+        // Fetch subjects, classes, teachers with their subject assignments, and school hours
+        const [lessonSubjects, lessonClasses, lessonTeachers, schoolHours] = await Promise.all([
           prisma.subject.findMany({
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
@@ -67,14 +67,29 @@ const FormContainer = async ({ table, type, data, id }: FormContainerProps) => {
           prisma.teacher.findMany({
             where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
             orderBy: { name: "asc" },
-            select: { id: true, name: true, surname: true },
+            select: { 
+              id: true, 
+              name: true, 
+              surname: true,
+              teacherSubjectClasses: {
+                select: {
+                  subjectId: true,
+                  subject: { select: { name: true } }
+                }
+              }
+            },
           }),
+          prisma.school.findUnique({
+            where: { id: schoolFilter.schoolId || "default-school-id" },
+            select: { openingTime: true, closingTime: true }
+          })
         ]);
 
         relatedData = {
           subjects: lessonSubjects,
           classes: lessonClasses,
           teachers: lessonTeachers,
+          schoolHours: schoolHours || { openingTime: "08:00", closingTime: "17:00" }
         };
         break;
       case "event":

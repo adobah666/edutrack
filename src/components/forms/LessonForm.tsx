@@ -136,7 +136,7 @@ const LessonForm = ({
   const handleSubjectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSubjectId = e.target.value;
     setSelectedSubjectId(newSubjectId);
-    setValue("subjectId", newSubjectId);
+    setValue("subjectId", parseInt(newSubjectId) || 0);
     
     // Reset teacher selection when subject changes
     setValue("teacherId", "");
@@ -146,7 +146,7 @@ const LessonForm = ({
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newClassId = e.target.value;
     setSelectedClassId(newClassId);
-    setValue("classId", newClassId);
+    setValue("classId", parseInt(newClassId) || 0);
     
     // Update school hours based on selected class
     const effectiveHours = getEffectiveHours(newClassId);

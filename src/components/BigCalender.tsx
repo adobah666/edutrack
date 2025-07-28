@@ -15,6 +15,9 @@ export interface Event {
   day: string;
 }
 
+// Type for calendar slots
+type CalendarSlot = Event | 'occupied' | null;
+
 const TimeHeader = ({ schoolHours }: { schoolHours?: { openingTime: string; closingTime: string } }) => {
   const openingHour = schoolHours ? parseInt(schoolHours.openingTime.split(':')[0]) : 8;
   const closingHour = schoolHours ? parseInt(schoolHours.closingTime.split(':')[0]) : 17;
@@ -111,8 +114,8 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
     return data.filter(event => event.day === day);
   };
 
-  const formatHourSlots = (events: Event[], dayHours: number[]) => {
-    const slots: (Event | null)[] = new Array(dayHours.length).fill(null);
+  const formatHourSlots = (events: Event[], dayHours: number[]): CalendarSlot[] => {
+    const slots: CalendarSlot[] = new Array(dayHours.length).fill(null);
     
     events.forEach(event => {
       const startDate = new Date(event.start);
@@ -134,7 +137,7 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
         slots[startIndex] = event;
         for (let i = 1; i < duration; i++) {
           if (startIndex + i < slots.length) {
-            slots[startIndex + i] = 'occupied' as any; // Mark as occupied but not the event itself
+            slots[startIndex + i] = 'occupied';
           }
         }
       }

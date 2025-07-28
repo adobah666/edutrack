@@ -8,11 +8,17 @@ const ParentPage = async () => {
   const { userId } = auth();
   const currentUserId = userId;
   
-  const students = await prisma.student.findMany({
+  // Get students through the ParentStudent junction table
+  const parentStudents = await prisma.parentStudent.findMany({
     where: {
       parentId: currentUserId!,
     },
+    include: {
+      student: true,
+    },
   });
+
+  const students = parentStudents.map(ps => ps.student);
 
   return (
     <div className="flex-1 p-4 flex gap-4 flex-col xl:flex-row">

@@ -11,9 +11,11 @@ import { Student, ClassFee, StudentFee, Class, FeeType, Prisma } from '@prisma/c
 type ClassFeeWithIncludes = {
   class: {
     students: Array<Student & {
-      parent: {
-        email: string | null;
-      } | null;
+      parentStudents: Array<{
+        parent: {
+          email: string | null;
+        } | null;
+      }>;
     }>;
   };
   feeType: FeeType;
@@ -37,7 +39,11 @@ export async function sendUpcomingPaymentReminders() {
           include: {
             students: {
               include: {
-                parent: true,
+                parentStudents: {
+                  include: {
+                    parent: true,
+                  },
+                },
               },
             },
           },
@@ -64,9 +70,10 @@ export async function sendUpcomingPaymentReminders() {
 
       // Send reminder for each student
       for (const student of studentsWithoutPayment) {
-        if (student.parent?.email) {
+        const parentWithEmail = student.parentStudents.find(ps => ps.parent?.email);
+        if (parentWithEmail?.parent?.email) {
           const result = await sendUpcomingFeeReminder({
-            to: student.parent.email,
+            to: parentWithEmail.parent.email,
             studentName: `${student.name} ${student.surname}`,
             feeName: fee.feeType.name,
             dueDate: fee.dueDate,
@@ -119,7 +126,11 @@ export async function sendOverduePaymentReminders() {
           include: {
             students: {
               include: {
-                parent: true,
+                parentStudents: {
+                  include: {
+                    parent: true,
+                  },
+                },
               },
             },
           },
@@ -146,9 +157,10 @@ export async function sendOverduePaymentReminders() {
 
       // Send overdue reminder for each student
       for (const student of studentsWithoutPayment) {
-        if (student.parent?.email) {
+        const parentWithEmail = student.parentStudents.find(ps => ps.parent?.email);
+        if (parentWithEmail?.parent?.email) {
           const result = await sendOverdueFeeReminder({
-            to: student.parent.email,
+            to: parentWithEmail.parent.email,
             studentName: `${student.name} ${student.surname}`,
             feeName: fee.feeType.name,
             dueDate: fee.dueDate,

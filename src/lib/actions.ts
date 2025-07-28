@@ -158,7 +158,7 @@ export const createParent = async (
   currentState: CurrentState,
   data: ParentSchema
 ) => {
-  let createdClerkUser = null;
+  let createdClerkUser: any = null;
 
   try {
     // FIRST: Validate school context before doing anything else
@@ -844,7 +844,6 @@ export const createStudent = async (
           birthday: data.birthday,
           gradeId: data.gradeId,
           classId: data.classId,
-          parentId: data.parentId,
           schoolId,
         },
       });
@@ -912,7 +911,6 @@ export const updateStudent = async (
         birthday: data.birthday,
         gradeId: data.gradeId,
         classId: data.classId,
-        parentId: data.parentId,
       },
     });
 

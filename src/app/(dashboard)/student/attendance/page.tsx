@@ -58,6 +58,12 @@ const StudentAttendancePage = async () => {
     }
   });
 
+  // Convert date to string format for AttendanceRecord interface
+  const formattedAttendanceHistory = attendanceHistory.map(attendance => ({
+    ...attendance,
+    date: attendance.date.toISOString().split('T')[0] // Convert to YYYY-MM-DD format
+  }));
+
   // Get student's class history to show attendance from previous classes
   const classHistory = await prisma.studentClassHistory.findMany({
     where: {
@@ -81,6 +87,13 @@ const StudentAttendancePage = async () => {
     }
   });
 
+  // Convert dates to string format for ClassHistory interface
+  const formattedClassHistory = classHistory.map(history => ({
+    ...history,
+    startDate: history.startDate.toISOString().split('T')[0],
+    endDate: history.endDate ? history.endDate.toISOString().split('T')[0] : null
+  }));
+
   return (
     <StudentAttendanceClient 
       student={{
@@ -89,8 +102,8 @@ const StudentAttendancePage = async () => {
         surname: student.surname,
         currentClass: student.class
       }}
-      attendanceHistory={attendanceHistory}
-      classHistory={classHistory}
+      attendanceHistory={formattedAttendanceHistory}
+      classHistory={formattedClassHistory}
     />
   );
 };

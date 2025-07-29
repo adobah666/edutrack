@@ -240,6 +240,7 @@ export const createParent = async (
         phone: data.phone,
         address: data.address,
         img: data.img || null,
+        password: data.password, // Store password for later retrieval
         schoolId,
       },
     });
@@ -844,6 +845,7 @@ export const createStudent = async (
           birthday: data.birthday,
           gradeId: data.gradeId,
           classId: data.classId,
+          password: data.password, // Store password for later retrieval
           schoolId,
         },
       });
@@ -911,6 +913,7 @@ export const updateStudent = async (
         birthday: data.birthday,
         gradeId: data.gradeId,
         classId: data.classId,
+        ...(data.password && data.password !== "" && { password: data.password }), // Update password if provided
       },
     });
 
@@ -2198,6 +2201,7 @@ export const updateParent = async (
         phone: data.phone,
         address: data.address,
         img: data.img || null,
+        ...(data.password && { password: data.password }), // Update password if provided
       },
     });
 

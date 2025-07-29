@@ -80,6 +80,7 @@ model Student {
   gradeId     Int
   schoolId    String
   birthday    DateTime
+  password    String?      // Store password for login credentials
   attendances Attendance[]
   results     Result[]
   class       Class        @relation(fields: [classId], references: [id])
@@ -148,6 +149,7 @@ model Parent {
   createdAt DateTime  @default(now())
   schoolId  String
   img       String?
+  password  String?   // Store password for login credentials
   school    School    @relation(fields: [schoolId], references: [id])
   parentStudents ParentStudent[]
 }

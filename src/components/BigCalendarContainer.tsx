@@ -11,9 +11,11 @@ import { useUser } from "@clerk/nextjs";
 export default function BigCalenderContainer({
   type,
   id,
+  compact = false,
 }: {
   type: "teacherId" | "classId";
   id: string | number;
+  compact?: boolean;
 }) {
   const [schedule, setSchedule] = useState<Event[]>([]);
   const [classes, setClasses] = useState<{ id: number; name: string }[]>([]);
@@ -203,7 +205,7 @@ export default function BigCalenderContainer({
       {type === "classId" && classes.length > 0 && (
         <ScheduleClassFilter classes={classes} currentClassId={Number(id)} />
       )}
-      <BigCalender data={schedule} isAdmin={isAdmin} schoolHours={schoolHours} />
+      <BigCalender data={schedule} isAdmin={isAdmin} schoolHours={schoolHours} compact={compact} />
     </div>
   );
 }

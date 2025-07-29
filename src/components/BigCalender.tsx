@@ -18,18 +18,18 @@ export interface Event {
 // Type for calendar slots
 type CalendarSlot = Event | 'occupied' | null;
 
-const TimeHeader = ({ schoolHours }: { schoolHours?: { openingTime: string; closingTime: string } }) => {
+const TimeHeader = ({ schoolHours, compact }: { schoolHours?: { openingTime: string; closingTime: string }; compact?: boolean }) => {
   const openingHour = schoolHours ? parseInt(schoolHours.openingTime.split(':')[0]) : 8;
   const closingHour = schoolHours ? parseInt(schoolHours.closingTime.split(':')[0]) : 17;
   const hours = Array.from({ length: closingHour - openingHour + 1 }, (_, i) => i + openingHour);
   
   return (
     <div className="flex border-b-2 border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-      <div className="w-32 p-3 font-bold text-gray-700 bg-white border-r-2 border-gray-200">
-        Day
+      <div className={`${compact ? 'w-20' : 'w-32'} ${compact ? 'p-2' : 'p-3'} font-bold text-gray-700 bg-white border-r-2 border-gray-200`}>
+        <span className={compact ? 'text-xs' : ''}>Day</span>
       </div>
       {hours.map((hour) => (
-        <div key={hour} className="flex-1 p-2 text-center font-semibold text-gray-600 border-l border-gray-200 min-w-[60px]">
+        <div key={hour} className={`flex-1 ${compact ? 'p-1' : 'p-2'} text-center font-semibold text-gray-600 border-l border-gray-200 ${compact ? 'min-w-[45px]' : 'min-w-[60px]'}`}>
           <span className="text-xs">{`${hour}:00`}</span>
         </div>
       ))}
@@ -37,7 +37,7 @@ const TimeHeader = ({ schoolHours }: { schoolHours?: { openingTime: string; clos
   );
 };
 
-const EventCell = ({ event, colSpan, isAdmin }: { event: Event; colSpan: number; isAdmin: boolean }) => {
+const EventCell = ({ event, colSpan, isAdmin, compact = false }: { event: Event; colSpan: number; isAdmin: boolean; compact?: boolean }) => {
   const router = useRouter();
   const [showDelete, setShowDelete] = useState(false);
 
@@ -79,31 +79,32 @@ const EventCell = ({ event, colSpan, isAdmin }: { event: Event; colSpan: number;
 
   return (
     <div 
-      className={`${getEventColor(event.title)} rounded-lg p-2 h-full relative group shadow-sm hover:shadow-md transition-all duration-200 border border-white/20`}
+      className={`${getEventColor(event.title)} rounded-lg ${compact ? 'p-1' : 'p-2'} h-full relative group shadow-sm hover:shadow-md transition-all duration-200 border border-white/20`}
       onMouseEnter={() => setShowDelete(true)}
       onMouseLeave={() => setShowDelete(false)}
     >
-      <div className="font-semibold text-sm truncate mb-1">{event.title}</div>
-      {event.subtitle && (
+      <div className={`font-semibold ${compact ? 'text-xs' : 'text-sm'} truncate ${compact ? 'mb-0' : 'mb-1'}`}>{event.title}</div>
+      {event.subtitle && !compact && (
         <div className="text-xs opacity-90 truncate">{event.subtitle}</div>
       )}
       {showDelete && isAdmin && (
         <button 
           onClick={handleDelete}
-          className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg"
+          className={`absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full ${compact ? 'w-4 h-4' : 'w-6 h-6'} flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-lg`}
           title="Delete lesson"
         >
-          <Image src="/delete.png" alt="Delete" width={12} height={12} />
+          <Image src="/delete.png" alt="Delete" width={compact ? 8 : 12} height={compact ? 8 : 12} />
         </button>
       )}
     </div>
   );
 };
 
-const BigCalendar = ({ data, isAdmin = false, schoolHours }: { 
+const BigCalendar = ({ data, isAdmin = false, schoolHours, compact = false }: { 
   data: Event[]; 
   isAdmin?: boolean;
   schoolHours?: { openingTime: string; closingTime: string };
+  compact?: boolean;
 }) => {
   const days = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"];
   const openingHour = schoolHours ? parseInt(schoolHours.openingTime.split(':')[0]) : 8;
@@ -148,8 +149,8 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
 
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
-      <div className="min-w-[1000px] overflow-x-auto">
-        <TimeHeader schoolHours={schoolHours} />
+      <div className={compact ? "w-full overflow-x-auto" : "min-w-[1000px] overflow-x-auto"}>
+        <TimeHeader schoolHours={schoolHours} compact={compact} />
         <div className="divide-y divide-gray-200">
           {days.map((day, dayIndex) => {
             const dayEvents = getEventsForDay(day);
@@ -157,22 +158,22 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
             
             return (
               <div key={day} className={`flex hover:bg-gray-50/50 transition-colors duration-150 ${dayIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
-                <div className="w-32 p-4 font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 border-r-2 border-gray-200 flex items-center">
-                  <span className="text-sm">{day}</span>
+                <div className={`${compact ? 'w-20' : 'w-32'} ${compact ? 'p-2' : 'p-4'} font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 border-r-2 border-gray-200 flex items-center`}>
+                  <span className={compact ? 'text-xs' : 'text-sm'}>{compact ? day.slice(0, 3) : day}</span>
                 </div>
                 <div className="flex-1 grid gap-1 p-1" style={{ gridTemplateColumns: `repeat(${hours.length}, 1fr)` }}>
                   {hourSlots.map((slot, index) => {
                     // Empty slot
                     if (slot === null) {
                       return (
-                        <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] hover:bg-blue-50/30 transition-colors duration-150" />
+                        <div key={`${day}-${hours[index]}`} className={`border-l border-gray-200 ${compact ? 'min-h-[50px]' : 'min-h-[70px]'} hover:bg-blue-50/30 transition-colors duration-150`} />
                       );
                     }
                     
                     // Occupied slot (part of a multi-hour event)
                     if (slot === 'occupied') {
                       return (
-                        <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px]" />
+                        <div key={`${day}-${hours[index]}`} className={`border-l border-gray-200 ${compact ? 'min-h-[50px]' : 'min-h-[70px]'}`} />
                       );
                     }
                     
@@ -183,8 +184,8 @@ const BigCalendar = ({ data, isAdmin = false, schoolHours }: {
                     const colSpan = Math.max(1, Math.min(endHour - startHour, hours.length - index));
                     
                     return (
-                      <div key={`${day}-${hours[index]}`} className="border-l border-gray-200 min-h-[70px] p-1" style={{ gridColumn: `span ${colSpan}` }}>
-                        <EventCell event={event} colSpan={1} isAdmin={isAdmin} />
+                      <div key={`${day}-${hours[index]}`} className={`border-l border-gray-200 ${compact ? 'min-h-[50px]' : 'min-h-[70px]'} p-1`} style={{ gridColumn: `span ${colSpan}` }}>
+                        <EventCell event={event} colSpan={1} isAdmin={isAdmin} compact={compact} />
                       </div>
                     );
                   })}

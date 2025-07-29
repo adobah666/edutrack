@@ -37,6 +37,9 @@ const StudentFeesPage = async () => {
               },
               studentFees: {
                 where: { studentId: userId }
+              },
+              eligibleStudents: {
+                where: { studentId: userId }
               }
             }
           }
@@ -61,9 +64,14 @@ const StudentFeesPage = async () => {
     redirect("/");
   }
 
+  // Filter fees to only include those where the student is eligible
+  const eligibleFees = student.class.classFees.filter(classFee => 
+    classFee.eligibleStudents.length > 0 // Student is eligible for this fee
+  );
+  
   // Separate mandatory and optional fees
-  const mandatoryFees = student.class.classFees.filter(classFee => !classFee.feeType.isOptional);
-  const optionalFees = student.class.classFees.filter(classFee => classFee.feeType.isOptional);
+  const mandatoryFees = eligibleFees.filter(classFee => !classFee.feeType.isOptional);
+  const optionalFees = eligibleFees.filter(classFee => classFee.feeType.isOptional);
 
   // Calculate fee status for mandatory fees only
   const feesWithStatus = mandatoryFees.map(classFee => {

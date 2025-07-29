@@ -90,6 +90,7 @@ model Student {
   examEligibility ExamEligibleStudent[]
   parentStudents ParentStudent[]
   feeOptIns StudentFeeOptIn[]
+  feeEligibility StudentFeeEligibility[]
 }
 
 model StudentClassHistory {
@@ -418,13 +419,34 @@ model ClassFee {
   id          Int          @id @default(autoincrement())
   amount      Float
   dueDate     DateTime
-  classId     Int
+  classId     Int?         // Optional - null for individual fees
   feeTypeId   Int
   schoolId    String
-  class       Class        @relation(fields: [classId], references: [id])
+  createdAt   DateTime     @default(now())
+  feeScope    FeeScope     @default(CLASS_WIDE) // New field to indicate scope
+  description String?      // Optional description for individual fees
+  class       Class?       @relation(fields: [classId], references: [id])
   feeType     FeeType      @relation(fields: [feeTypeId], references: [id])
   school      School       @relation(fields: [schoolId], references: [id])
   studentFees StudentFee[]
+  eligibleStudents StudentFeeEligibility[]
+}
+
+enum FeeScope {
+  CLASS_WIDE    // Fee for entire class
+  INDIVIDUAL    // Fee for specific students
+}
+
+model StudentFeeEligibility {
+  id         Int      @id @default(autoincrement())
+  studentId  String
+  classFeeId Int
+  createdAt  DateTime @default(now())
+  
+  student    Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classFee   ClassFee @relation(fields: [classFeeId], references: [id], onDelete: Cascade)
+  
+  @@unique([studentId, classFeeId]) // Prevent duplicate entries
 }
 
 model StudentFee {

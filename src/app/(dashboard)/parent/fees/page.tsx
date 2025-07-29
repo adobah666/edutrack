@@ -29,20 +29,8 @@ const ParentFeesPage = async () => {
           student: {
             include: {
               class: {
-                include: {
-                  classFees: {
-                    where: schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {},
-                    include: {
-                      feeType: {
-                        select: {
-                          id: true,
-                          name: true,
-                          isOptional: true
-                        }
-                      },
-                      studentFees: true
-                    }
-                  }
+                select: {
+                  name: true
                 }
               }
             }
@@ -56,10 +44,48 @@ const ParentFeesPage = async () => {
     redirect("/");
   }
 
+  // Get all fees that each student is eligible for (both class-wide and individual)
+  const studentIds = parent.parentStudents.map(ps => ps.student.id);
+  
+  const allEligibleFees = await prisma.classFee.findMany({
+    where: {
+      ...(schoolFilter.schoolId ? { schoolId: schoolFilter.schoolId } : {}),
+      eligibleStudents: {
+        some: {
+          studentId: { in: studentIds }
+        }
+      }
+    },
+    include: {
+      feeType: {
+        select: {
+          id: true,
+          name: true,
+          isOptional: true
+        }
+      },
+      studentFees: {
+        where: {
+          studentId: { in: studentIds }
+        }
+      },
+      eligibleStudents: {
+        where: {
+          studentId: { in: studentIds }
+        }
+      }
+    }
+  });
+
   // Process children's fees
   const childrenWithFees = parent.parentStudents.map(({ student }) => {
+    // Get fees that this specific student is eligible for
+    const studentEligibleFees = allEligibleFees.filter(fee => 
+      fee.eligibleStudents.some(eligible => eligible.studentId === student.id)
+    );
+    
     // Separate mandatory and optional fees
-    const mandatoryFees = student.class.classFees.filter(classFee => !classFee.feeType.isOptional);
+    const mandatoryFees = studentEligibleFees.filter(fee => !fee.feeType.isOptional);
     
     const feesWithStatus = mandatoryFees.map(classFee => {
       const totalPaid = classFee.studentFees
@@ -95,6 +121,8 @@ const ParentFeesPage = async () => {
       fees: feesWithStatus
     };
   });
+
+
 
   return (
     <ParentFeesPageClient 

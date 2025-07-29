@@ -62,38 +62,40 @@ const FeeDetailsPage = async ({
     };
   }
 
-  // Get students in the class and their payment status
+  // Get students eligible for this fee and their payment status
+  const baseWhere = {
+    feeEligibility: {
+      some: {
+        classFeeId: classFee.id,
+      },
+    },
+    ...(role === "parent" ? { 
+      parentStudents: {
+        some: {
+          parentId: currentUserId,
+        },
+      },
+    } : {}),
+  };
+
   const [students, count] = await prisma.$transaction([
     prisma.student.findMany({
-      where: {
-        classId: classFee.classId,
-        ...(role === "parent" ? { 
-          parentStudents: {
-            some: {
-              parentId: currentUserId,
-            },
-          },
-        } : {}),
-      },
+      where: baseWhere,
       include: {
         studentFees: {
           where: { classFeeId: classFee.id },
+        },
+        class: {
+          select: {
+            name: true,
+          },
         },
       },
       take: ITEM_PER_PAGE,
       skip: ITEM_PER_PAGE * (p - 1),
     }),
     prisma.student.count({
-      where: {
-        classId: classFee.classId,
-        ...(role === "parent" ? { 
-          parentStudents: {
-            some: {
-              parentId: currentUserId,
-            },
-          },
-        } : {}),
-      },
+      where: baseWhere,
     }),
   ]);
 

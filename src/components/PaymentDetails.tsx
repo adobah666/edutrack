@@ -68,7 +68,14 @@ const PaymentDetails = async ({
             Student Payments - {classFee.feeType.name}
           </h1>
           <div className="text-gray-600">
-            <p className="mb-1">Class: {classFee.class.name}</p>
+            {classFee.class ? (
+              <p className="mb-1">Class: {classFee.class.name}</p>
+            ) : (
+              <p className="mb-1">Fee Type: Individual/Group Fee</p>
+            )}
+            {classFee.description && (
+              <p className="mb-1">Description: {classFee.description}</p>
+            )}
             <p className="mb-1">
               Total Fee Amount: GH₵{classFee.amount.toFixed(2)}
             </p>

@@ -37,13 +37,12 @@ export async function getFeesData(query: Prisma.Sql, p: number): Promise<{
           SUM(sp.paid_amount) as total_paid_amount
         FROM StudentPayments sp
         GROUP BY sp."classFeeId"
-      ),      ClassStudents AS (
+      ),      EligibleStudents AS (
         SELECT 
-          c.id as "classId",
-          COUNT(DISTINCT s.id) as total_students
-        FROM "Class" c
-        LEFT JOIN "Student" s ON s."classId" = c.id
-        GROUP BY c.id
+          sfe."classFeeId",
+          COUNT(DISTINCT sfe."studentId") as eligible_students
+        FROM "StudentFeeEligibility" sfe
+        GROUP BY sfe."classFeeId"
       )
       SELECT 
         cf.id,
@@ -54,13 +53,13 @@ export async function getFeesData(query: Prisma.Sql, p: number): Promise<{
         c.name as "className",
         ft.name as "feeTypeName",
         COALESCE(ps.paid_students_count, 0) as "paidCount",
-        COALESCE(cs.total_students, 0) as "totalStudents",
+        COALESCE(es.eligible_students, 0) as "totalStudents",
         COALESCE(ps.total_paid_amount, 0) as "totalPaid"
       FROM "ClassFee" cf
       LEFT JOIN "Class" c ON cf."classId" = c.id
       LEFT JOIN "FeeType" ft ON cf."feeTypeId" = ft.id
       LEFT JOIN PaymentSummary ps ON ps."classFeeId" = cf.id
-      LEFT JOIN ClassStudents cs ON cs."classId" = cf."classId"
+      LEFT JOIN EligibleStudents es ON es."classFeeId" = cf.id
       ${query}
       ORDER BY cf."dueDate" DESC
       LIMIT ${ITEM_PER_PAGE}

@@ -20,7 +20,7 @@ export type FeeReport = {
     date: Date;
     amount: number;
     student: { name: string; surname: string };
-    class: { name: string };
+    class: { name: string } | null;
     feeType: { name: string };
   }[];
 };

@@ -8,7 +8,7 @@ import Link from "next/link";
 
 type PaymentDetailsProps = {
   classFee: ClassFee & {
-    class: Class;
+    class: Class | null;
     feeType: FeeType;
   };
   students: (Student & {

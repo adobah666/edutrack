@@ -70,6 +70,7 @@ const ParentPage = async () => {
       include: {
         feeType: {
           select: {
+            name: true,
             isOptional: true
           }
         },

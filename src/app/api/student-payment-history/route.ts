@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 
     // Group payments by academic year/class for better organization
     const groupedPayments = payments.reduce((acc, payment) => {
-      const className = payment.classFee.class.name;
+      const className = payment.classFee.class?.name || 'General Fees';
       if (!acc[className]) {
         acc[className] = [];
       }

@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
 import TeacherSubjectClassAssignment from "../TeacherSubjectClassAssignment";
+import PasswordInput from "../PasswordInput";
 
 interface FormState {
   success: boolean;
@@ -181,13 +182,49 @@ const TeacherForm = ({
           register={register}
           error={errors?.email}
         />
-        <InputField
+        <PasswordInput
           label="Password"
           name="password"
-          type="password"
-          defaultValue={data?.password}
           register={register}
           error={errors?.password}
+          defaultValue={data?.password}
+          className="w-full md:w-1/4"
+          showGenerateButton={true}
+          onGeneratePassword={async () => {
+            const nameValue = (document.querySelector('input[name="name"]') as HTMLInputElement)?.value;
+            const surnameValue = (document.querySelector('input[name="surname"]') as HTMLInputElement)?.value;
+            
+            if (!nameValue) {
+              toast.error("Please enter a name first");
+              return;
+            }
+
+            try {
+              const response = await fetch('/api/generate-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: nameValue,
+                  surname: surnameValue,
+                  userType: 'teacher'
+                })
+              });
+
+              if (!response.ok) throw new Error('Failed to generate password');
+              
+              const data = await response.json();
+              
+              setValue("password", data.password, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true 
+              });
+              
+              toast.success(`Password generated: ${data.password}`);
+            } catch (error) {
+              toast.error("Failed to generate password");
+            }
+          }}
         />
       </div>
       <span className="text-xs text-gray-400 font-medium">

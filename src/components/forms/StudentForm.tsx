@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
+import PasswordInput from "../PasswordInput";
 
 const StudentForm = ({
   type,
@@ -45,6 +46,7 @@ const StudentForm = ({
       otherNames: data?.otherNames || "",
       surname: data?.surname || "",
       address: data?.address || "",
+      phone: data?.phone || "",
       bloodType: data?.bloodType || "",
       birthday: data?.birthday ? new Date(data.birthday) : new Date(),
       sex: data?.sex || "MALE",
@@ -187,12 +189,48 @@ const StudentForm = ({
             </p>
           )}
         </div>
-        <InputField
+        <PasswordInput
           label="Password"
           name="password"
-          type="password"
           register={register}
           error={errors?.password}
+          className="w-full md:w-1/4"
+          showGenerateButton={true}
+          onGeneratePassword={async () => {
+            const nameValue = (document.querySelector('input[name="name"]') as HTMLInputElement)?.value;
+            const surnameValue = (document.querySelector('input[name="surname"]') as HTMLInputElement)?.value;
+            
+            if (!nameValue) {
+              toast.error("Please enter a name first");
+              return;
+            }
+
+            try {
+              const response = await fetch('/api/generate-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: nameValue,
+                  surname: surnameValue,
+                  userType: 'student'
+                })
+              });
+
+              if (!response.ok) throw new Error('Failed to generate password');
+              
+              const data = await response.json();
+              
+              setValue("password", data.password, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true 
+              });
+              
+              toast.success(`Password generated: ${data.password}`);
+            } catch (error) {
+              toast.error("Failed to generate password");
+            }
+          }}
         />
       </div>
       <span className="text-xs text-gray-400 font-medium">
@@ -256,6 +294,13 @@ const StudentForm = ({
           name="address"
           register={register}
           error={errors.address}
+        />
+        <InputField
+          label="Phone (Optional)"
+          name="phone"
+          register={register}
+          error={errors.phone}
+          type="tel"
         />
         <InputField
           label="Blood Type"

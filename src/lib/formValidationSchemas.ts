@@ -68,6 +68,7 @@ export const studentSchema = z.object({
   surname: z.string().min(1, { message: "Last name is required!" }),
   address: z.string(),
   img: z.string().optional(),
+  phone: z.string().optional(),
   bloodType: z.string().min(1, { message: "Blood Type is required!" }),
   birthday: z.coerce.date({ message: "Birthday is required!" }),
   sex: z.enum(["MALE", "FEMALE"], { message: "Sex is required!" }),
@@ -196,6 +197,7 @@ export const eventSchema = z.object({
   endTime: z.coerce.date({ message: "End time is required" }),
   classIds: z.array(z.coerce.number()).optional(), // Changed to support multiple classes
   allClasses: z.boolean().optional(), // Option to select all classes
+  sendSMS: z.boolean().optional(),
 });
 
 export type EventSchema = z.infer<typeof eventSchema>;
@@ -210,7 +212,7 @@ export const announcementSchema = z.object({
   priority: z.string().min(1, { message: "Priority is required" }),
   teacherId: z.string().min(1, { message: "Teacher is required" }),
   classId: z.string().optional(),
-  
+  sendSMS: z.boolean().optional(),
 });
 
 export type AnnouncementSchema = z.infer<typeof announcementSchema>;

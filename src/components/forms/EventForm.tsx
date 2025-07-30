@@ -220,6 +220,19 @@ const EventForm = ({
             </p>
           )}
         </div>
+
+        {/* SMS Notification Option */}
+        <div className="flex items-center gap-2 w-full">
+          <input
+            type="checkbox"
+            id="sendSMS"
+            {...register("sendSMS")}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="sendSMS" className="text-sm text-gray-700">
+            Send SMS notification to students and parents
+          </label>
+        </div>
       </div>
 
       {state.error && (

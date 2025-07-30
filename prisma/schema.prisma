@@ -75,6 +75,7 @@ model Student {
   img         String?
   bloodType   String
   sex         UserSex
+  phone       String?      // Phone number for SMS notifications
   createdAt   DateTime     @default(now())
   classId     Int          // Current class
   gradeId     Int
@@ -120,7 +121,7 @@ model Teacher {
   name          String
   surname       String
   email         String?        @unique
-  phone         String?        @unique
+  phone         String?
   address       String
   img           String?
   bloodType     String
@@ -144,7 +145,7 @@ model Parent {
   name      String
   surname   String
   email     String?   @unique
-  phone     String    @unique
+  phone     String
   address   String
   createdAt DateTime  @default(now())
   schoolId  String
@@ -598,6 +599,36 @@ enum Term {
   SECOND
   THIRD
   FINAL
+}
+
+enum SMSType {
+  WELCOME
+  PAYMENT_CONFIRMATION
+  ANNOUNCEMENT
+  EVENT_NOTIFICATION
+  ATTENDANCE_ALERT
+  EXAM_REMINDER
+  MANUAL
+}
+
+enum SMSStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+model SMSLog {
+  id           Int       @id @default(autoincrement())
+  phoneNumber  String
+  content      String
+  type         SMSType   @default(MANUAL)
+  status       SMSStatus @default(PENDING)
+  sentBy       String    // User ID who sent the SMS
+  recipientId  String?   // ID of the recipient (student, parent, teacher)
+  messageId    String?   // Hubtel message ID for tracking
+  errorMessage String?   // Error message if failed
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 }
 
 enum PayFrequency {

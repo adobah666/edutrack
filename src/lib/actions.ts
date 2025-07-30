@@ -230,7 +230,7 @@ export const createParent = async (
     });
 
     // Create parent in database
-    await prisma.parent.create({
+    const newParent = await prisma.parent.create({
       data: {
         id: createdClerkUser.id,
         username: data.username,
@@ -243,6 +243,9 @@ export const createParent = async (
         password: data.password, // Store password for later retrieval
         schoolId,
       },
+      include: {
+        school: true
+      }
     });
 
     // Link students if provided (backward compatibility)
@@ -272,6 +275,25 @@ export const createParent = async (
           })),
           skipDuplicates: true,
         });
+      }
+    }
+
+    // Send welcome SMS if phone number is provided
+    if (data.phone) {
+      try {
+        const { SMSService } = await import('@/lib/sms-service');
+        const welcomeMessage = SMSService.getWelcomeMessage(
+          'parent',
+          data.name,
+          data.username,
+          data.password,
+          newParent.school.name
+        );
+        
+        await SMSService.sendSMS(data.phone, welcomeMessage);
+      } catch (smsError) {
+        console.error('Failed to send welcome SMS:', smsError);
+        // Don't fail the entire operation if SMS fails
       }
     }
 
@@ -539,6 +561,9 @@ export const createTeacher = async (
             })),
           },
         },
+        include: {
+          school: true
+        }
       });
 
       // Create teacher-subject-class assignments if provided
@@ -560,6 +585,25 @@ export const createTeacher = async (
             skipDuplicates: true, // Prevent duplicate assignments
           });
           console.log('Successfully created teacher-subject-class assignments'); // Debug log
+        }
+      }
+
+      // Send welcome SMS if phone number is provided
+      if (data.phone) {
+        try {
+          const { SMSService } = await import('@/lib/sms-service');
+          const welcomeMessage = SMSService.getWelcomeMessage(
+            'teacher',
+            data.name,
+            data.username,
+            data.password,
+            teacher.school.name
+          );
+          
+          await SMSService.sendSMS(data.phone, welcomeMessage);
+        } catch (smsError) {
+          console.error('Failed to send welcome SMS:', smsError);
+          // Don't fail the entire operation if SMS fails
         }
       }
 
@@ -832,7 +876,7 @@ export const createStudent = async (
       }
 
       // If user creation succeeded, create the student record
-      await prisma.student.create({
+      const newStudent = await prisma.student.create({
         data: {
           id: createdClerkUser.id,
           username: data.username,
@@ -840,6 +884,7 @@ export const createStudent = async (
           surname: data.surname,
           address: data.address,
           img: data.img || null,
+          phone: data.phone || null,
           bloodType: data.bloodType,
           sex: data.sex,
           birthday: data.birthday,
@@ -848,7 +893,29 @@ export const createStudent = async (
           password: data.password, // Store password for later retrieval
           schoolId,
         },
+        include: {
+          school: true
+        }
       });
+
+      // Send welcome SMS if phone number is provided
+      if (data.phone) {
+        try {
+          const { SMSService } = await import('@/lib/sms-service');
+          const welcomeMessage = SMSService.getWelcomeMessage(
+            'student',
+            data.name,
+            data.username,
+            data.password,
+            newStudent.school.name
+          );
+          
+          await SMSService.sendSMS(data.phone, welcomeMessage);
+        } catch (smsError) {
+          console.error('Failed to send welcome SMS:', smsError);
+          // Don't fail the entire operation if SMS fails
+        }
+      }
 
       return { success: true, error: false };
     } catch (error) {
@@ -908,6 +975,7 @@ export const updateStudent = async (
         surname: data.surname,
         address: data.address,
         img: data.img || null,
+        phone: data.phone || null,
         bloodType: data.bloodType,
         sex: data.sex,
         birthday: data.birthday,
@@ -1037,6 +1105,67 @@ export const createExam = async (
         });
       }
     });
+
+    // Send SMS reminders for the exam (optional, could be triggered by a separate job)
+    try {
+      const { SMSService } = await import('@/lib/sms-service');
+      
+      // Get school info
+      const school = await prisma.school.findUnique({
+        where: { id: schoolId },
+        select: { name: true }
+      });
+
+      // Get students from the selected classes
+      const validClassIds = data.classIds && data.classIds.length > 0 ? data.classIds : [data.classId];
+      const classIds = validClassIds.filter((classId): classId is number => classId !== undefined);
+      
+      if (classIds.length > 0 && school) {
+        const students = await prisma.student.findMany({
+          where: {
+            classId: { in: classIds },
+            schoolId: schoolId,
+          },
+          select: {
+            name: true,
+            surname: true,
+            phone: true,
+            parentStudents: {
+              select: {
+                parent: {
+                  select: {
+                    phone: true
+                  }
+                }
+              }
+            }
+          }
+        });
+
+        const examDate = data.startTime.toLocaleDateString();
+        
+        for (const student of students) {
+          const studentName = `${student.name} ${student.surname}`;
+          const reminderMessage = SMSService.getExamReminderMessage(
+            data.title,
+            examDate,
+            studentName,
+            school.name
+          );
+
+          // Get all phone numbers for the student (student + parents)
+          const phoneNumbers = SMSService.getStudentPhoneNumbers(student);
+          
+          // Send SMS to all available phone numbers
+          for (const phone of phoneNumbers) {
+            await SMSService.sendSMS(phone, reminderMessage);
+          }
+        }
+      }
+    } catch (smsError) {
+      console.error('Failed to send exam reminder SMS:', smsError);
+      // Don't fail the exam creation if SMS fails
+    }
 
     // revalidatePath("/list/exams");
     return { success: true, error: false };
@@ -1557,6 +1686,63 @@ export const createAttendance = async (
 
     console.log("Successfully created/updated attendance records:", results.length);
 
+    // Send SMS alerts for absent students
+    try {
+      const absentStudents = data.students.filter(student => !student.isPresent);
+      
+      if (absentStudents.length > 0) {
+        const { SMSService } = await import('@/lib/sms-service');
+        
+        // Get school info and student details
+        const school = await prisma.school.findUnique({
+          where: { id: schoolFilter.schoolId! },
+          select: { name: true }
+        });
+
+        for (const absentStudent of absentStudents) {
+          // Get student details with parent info
+          const studentDetails = await prisma.student.findUnique({
+            where: { id: absentStudent.id },
+            select: {
+              name: true,
+              surname: true,
+              phone: true,
+              parentStudents: {
+                select: {
+                  parent: {
+                    select: {
+                      phone: true
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (studentDetails) {
+            const studentName = `${studentDetails.name} ${studentDetails.surname}`;
+            const dateStr = data.date.toLocaleDateString();
+            const alertMessage = SMSService.getAttendanceAlertMessage(
+              studentName,
+              dateStr,
+              school?.name || 'School'
+            );
+
+            // Get all phone numbers for the student (student + parents)
+            const phoneNumbers = SMSService.getStudentPhoneNumbers(studentDetails);
+            
+            // Send SMS to all available phone numbers
+            for (const phone of phoneNumbers) {
+              await SMSService.sendSMS(phone, alertMessage);
+            }
+          }
+        }
+      }
+    } catch (smsError) {
+      console.error('Failed to send attendance alert SMS:', smsError);
+      // Don't fail the attendance creation if SMS fails
+    }
+
     revalidatePath("/list/attendance");
     revalidatePath("/attendance");
     return { success: true, error: false };
@@ -1801,7 +1987,7 @@ export const createEvent = async (
     }
 
     // Create multiple event records using transaction
-    await prisma.$transaction(
+    const createdEvents = await prisma.$transaction(
       classIdsToCreate.map(classId =>
         prisma.event.create({
           data: {
@@ -1812,9 +1998,85 @@ export const createEvent = async (
             classId: classId,
             schoolId: schoolFilter.schoolId!,
           },
+          include: {
+            school: true,
+            class: {
+              include: {
+                students: {
+                  select: {
+                    phone: true,
+                    parentStudents: {
+                      select: {
+                        parent: {
+                          select: {
+                            phone: true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
         })
       )
     );
+
+    // Send SMS notifications for events
+    if (data.sendSMS && createdEvents.length > 0) {
+      try {
+        const { SMSService } = await import('@/lib/sms-service');
+        const eventDate = data.startTime.toLocaleDateString();
+        const eventMessage = SMSService.getEventNotificationMessage(
+          data.title,
+          eventDate,
+          createdEvents[0].school.name
+        );
+
+        const phoneNumbers = new Set<string>();
+
+        for (const event of createdEvents) {
+          if (event.class) {
+            // Send to specific class students and their parents
+            for (const student of event.class.students) {
+              const studentPhones = SMSService.getStudentPhoneNumbers(student);
+              studentPhones.forEach(phone => phoneNumbers.add(phone));
+            }
+          } else {
+            // Send to all students and parents in the school (school-wide event)
+            const allStudents = await prisma.student.findMany({
+              where: { schoolId: schoolFilter.schoolId },
+              select: {
+                phone: true,
+                parentStudents: {
+                  select: {
+                    parent: {
+                      select: {
+                        phone: true
+                      }
+                    }
+                  }
+                }
+              }
+            });
+
+            for (const student of allStudents) {
+              const studentPhones = SMSService.getStudentPhoneNumbers(student);
+              studentPhones.forEach(phone => phoneNumbers.add(phone));
+            }
+          }
+        }
+
+        // Send SMS to all collected phone numbers
+        for (const phone of phoneNumbers) {
+          await SMSService.sendSMS(phone, eventMessage);
+        }
+      } catch (smsError) {
+        console.error('Failed to send event SMS:', smsError);
+        // Don't fail the event creation if SMS fails
+      }
+    }
 
     // revalidatePath("/list/events");
     return { success: true, error: false };
@@ -1872,7 +2134,80 @@ export async function createAnnouncement(prevState: any, formData: AnnouncementS
         classId: formData.classId ? parseInt(formData.classId) : null,
         schoolId: schoolFilter.schoolId,
       },
+      include: {
+        school: true,
+        class: {
+          include: {
+            students: {
+              select: {
+                phone: true,
+                parentStudents: {
+                  select: {
+                    parent: {
+                      select: {
+                        phone: true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     });
+
+    // Send SMS notifications for announcements
+    if (formData.sendSMS) {
+      try {
+        const { SMSService } = await import('@/lib/sms-service');
+        const announcementMessage = SMSService.getAnnouncementMessage(
+          formData.title,
+          description,
+          result.school.name
+        );
+
+        const phoneNumbers = new Set<string>();
+
+        if (result.class) {
+          // Send to specific class students and their parents
+          for (const student of result.class.students) {
+            const studentPhones = SMSService.getStudentPhoneNumbers(student);
+            studentPhones.forEach(phone => phoneNumbers.add(phone));
+          }
+        } else {
+          // Send to all students and parents in the school
+          const allStudents = await prisma.student.findMany({
+            where: { schoolId: schoolFilter.schoolId },
+            select: {
+              phone: true,
+              parentStudents: {
+                select: {
+                  parent: {
+                    select: {
+                      phone: true
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          for (const student of allStudents) {
+            const studentPhones = SMSService.getStudentPhoneNumbers(student);
+            studentPhones.forEach(phone => phoneNumbers.add(phone));
+          }
+        }
+
+        // Send SMS to all collected phone numbers
+        for (const phone of phoneNumbers) {
+          await SMSService.sendSMS(phone, announcementMessage);
+        }
+      } catch (smsError) {
+        console.error('Failed to send announcement SMS:', smsError);
+        // Don't fail the announcement creation if SMS fails
+      }
+    }
 
     return {
       success: true,

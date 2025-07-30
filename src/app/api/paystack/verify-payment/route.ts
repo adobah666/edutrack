@@ -127,6 +127,21 @@ export async function POST(req: Request) {
           select: {
             name: true,
             surname: true,
+            phone: true,
+            school: {
+              select: {
+                name: true
+              }
+            },
+            parentStudents: {
+              select: {
+                parent: {
+                  select: {
+                    phone: true
+                  }
+                }
+              }
+            }
           },
         },
       },
@@ -139,6 +154,29 @@ export async function POST(req: Request) {
       `${studentFee.student.name} ${studentFee.student.surname}`,
       classFee.feeType.name
     );
+
+    // Send payment confirmation SMS to student and parents
+    try {
+      const { SMSService } = await import('@/lib/sms-service');
+      const studentName = `${studentFee.student.name} ${studentFee.student.surname}`;
+      const paymentMessage = SMSService.getPaymentConfirmationMessage(
+        studentName,
+        paidAmount,
+        classFee.feeType.name,
+        studentFee.student.school.name
+      );
+
+      // Get all phone numbers for the student (student + parents)
+      const phoneNumbers = SMSService.getStudentPhoneNumbers(studentFee.student);
+      
+      // Send SMS to all available phone numbers
+      for (const phone of phoneNumbers) {
+        await SMSService.sendSMS(phone, paymentMessage);
+      }
+    } catch (smsError) {
+      console.error('Failed to send payment confirmation SMS:', smsError);
+      // Don't fail the payment if SMS fails
+    }
 
     return NextResponse.json({
       success: true,

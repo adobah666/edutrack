@@ -32,7 +32,7 @@ const AnnouncementForm = ({
   const [isLoading, setIsLoading] = useState(false);
   const [relatedData, setRelatedData] = useState(initialRelatedData || {});
   const [fetchError, setFetchError] = useState<string | null>(null);
-  
+
   // Fetch classes and teachers using server actions
   useEffect(() => {
     const fetchData = async () => {
@@ -43,17 +43,17 @@ const AnnouncementForm = ({
           getClasses(),
           getTeachers()
         ]);
-        
+
         setRelatedData({
           classes: classesData.success ? classesData.data : [],
           teachers: teachersData.success ? teachersData.data : []
         });
-        
+
         if (!classesData.success) {
           console.error("Failed to fetch classes:", classesData.error);
           setFetchError(prev => prev || `Classes fetch failed: ${classesData.error}`);
         }
-        
+
         if (!teachersData.success) {
           console.error("Failed to fetch teachers:", teachersData.error);
           setFetchError(prev => prev || `Teachers fetch failed: ${teachersData.error}`);
@@ -65,13 +65,13 @@ const AnnouncementForm = ({
         setIsLoading(false);
       }
     };
-    
+
     // Only fetch if we don't already have the data
     if (!relatedData.classes || !relatedData.teachers) {
       fetchData();
     }
   }, [relatedData.classes, relatedData.teachers]);
-  
+
   // Make sure classes and teachers are arrays, even if undefined
   const classes = Array.isArray(relatedData?.classes) ? relatedData.classes : [];
   const teachers = Array.isArray(relatedData?.teachers) ? relatedData.teachers : [];
@@ -84,9 +84,9 @@ const AnnouncementForm = ({
     resolver: zodResolver(announcementSchema),
     defaultValues: data
       ? {
-          ...data,
-          date: data.date ? new Date(data.date).toISOString().split("T")[0] : undefined,
-        }
+        ...data,
+        date: data.date ? new Date(data.date).toISOString().split("T")[0] : undefined,
+      }
       : undefined,
   });
 
@@ -145,7 +145,7 @@ const AnnouncementForm = ({
           error={errors?.title}
           className="w-full md:w-1/2"
         />
-        
+
         {data && (
           <InputField
             label="Id"
@@ -217,8 +217,8 @@ const AnnouncementForm = ({
             <option value="">Select Author</option>
             {teachers && teachers.length > 0 ? (
               teachers.map((teacher) => (
-                <option 
-                  value={teacher.id} 
+                <option
+                  value={teacher.id}
                   key={teacher.id}
                 >
                   {teacher.name} {teacher.surname}
@@ -245,8 +245,8 @@ const AnnouncementForm = ({
             <option value="">All Classes</option>
             {classes && classes.length > 0 ? (
               classes.map((classItem) => (
-                <option 
-                  value={String(classItem.id)} 
+                <option
+                  value={String(classItem.id)}
                   key={classItem.id}
                 >
                   {classItem.name}
@@ -264,12 +264,25 @@ const AnnouncementForm = ({
             </p>
           )}
         </div>
+
+        {/* SMS Notification Option */}
+        <div className="flex items-center gap-2 w-full">
+          <input
+            type="checkbox"
+            id="sendSMS"
+            {...register("sendSMS")}
+            className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+          />
+          <label htmlFor="sendSMS" className="text-sm text-gray-700">
+            Send SMS notification to students and parents
+          </label>
+        </div>
       </div>
-      
+
       {state.error && (
         <span className="text-red-500">Something went wrong!</span>
       )}
-      
+
       <button className="bg-blue-400 text-white p-2 rounded-md">
         {type === "create" ? "Create" : "Update"}
       </button>

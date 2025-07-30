@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { CldUploadWidget } from "next-cloudinary";
 import ParentStudentAssignment from "../ParentStudentAssignment";
+import PasswordInput from "../PasswordInput";
 
 interface Student {
   id: number;
@@ -201,12 +202,47 @@ const ParentForm = ({
       
       {/* Password and Email on separate row */}
       <div className="flex justify-between flex-wrap gap-4">
-        <InputField
+        <PasswordInput
           label="Password"
           name="password"
-          type="password"
           register={register}
           error={errors?.password}
+          showGenerateButton={true}
+          onGeneratePassword={async () => {
+            const nameValue = (document.querySelector('input[name="name"]') as HTMLInputElement)?.value;
+            const surnameValue = (document.querySelector('input[name="surname"]') as HTMLInputElement)?.value;
+            
+            if (!nameValue) {
+              toast.error("Please enter a name first");
+              return;
+            }
+
+            try {
+              const response = await fetch('/api/generate-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  name: nameValue,
+                  surname: surnameValue,
+                  userType: 'parent'
+                })
+              });
+
+              if (!response.ok) throw new Error('Failed to generate password');
+              
+              const data = await response.json();
+              
+              setValue("password", data.password, { 
+                shouldValidate: true,
+                shouldDirty: true,
+                shouldTouch: true 
+              });
+              
+              toast.success(`Password generated: ${data.password}`);
+            } catch (error) {
+              toast.error("Failed to generate password");
+            }
+          }}
         />
         <InputField
           label="Email"

@@ -144,6 +144,12 @@ const menuItems = [
 				visible: ["admin"],
 			},
 			{
+				icon: "/message.png",
+				label: "SMS Management",
+				href: "/admin/sms",
+				visible: ["admin"],
+			},
+			{
 			  icon: "/attendance.png",
 			  label: "Attendance",
 			  href: "/list/attendance",

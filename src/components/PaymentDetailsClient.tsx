@@ -4,7 +4,6 @@ import { Class, ClassFee, FeeType, Student, StudentFee } from "@prisma/client";
 import TableSearch from "./TableSearch";
 import Pagination from "./Pagination";
 import FormModal from "./FormModal";
-import Image from "next/image";
 import Link from "next/link";
 import AddStudentsToFee from "./AddStudentsToFee";
 import { useRouter } from "next/navigation";
@@ -130,20 +129,10 @@ const PaymentDetailsClient = ({
           </div>
         </div>
         {role === "admin" && (
-          <div className="flex gap-2">
-            <AddStudentsToFee 
-              classFeeId={classFee.id} 
-              onStudentsAdded={handleStudentsAdded}
-            />
-            <FormModal
-              table="studentFee"
-              type="create"
-              data={{
-                classFeeId: classFee.id,
-                remainingAmount: classFee.amount,
-              }}
-            />
-          </div>
+          <AddStudentsToFee 
+            classFeeId={classFee.id} 
+            onStudentsAdded={handleStudentsAdded}
+          />
         )}
       </div>
 

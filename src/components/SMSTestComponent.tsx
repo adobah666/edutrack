@@ -47,8 +47,10 @@ const SMSTestComponent = ({ schoolName }: Props) => {
 
   const loadSampleMessage = (type: string) => {
     const samples = {
-      welcome: `Welcome to ${schoolName}! Your account has been created. Username: testuser, Password: testpass123. Please change your password after first login.`,
-      payment: `Payment confirmed for John Doe at ${schoolName}. Amount: GHS 500 for School Fees. Thank you!`,
+      welcome: `Welcome to ${schoolName}! Your student account has been created. Username: testuser, Password: testpass123. Please change your password after first login.`,
+      parent_welcome: `Welcome to ${schoolName}! Your parent account has been created for John Doe, Mary Doe. Username: testuser, Password: testpass123. You can now track your children's progress. Please change your password after first login.`,
+      payment: `Payment confirmed for John Doe at ${schoolName}. Amount: GHS 500 for School Fees. Remaining balance: GHS 1000 of GHS 1500. Thank you!`,
+      payment_full: `Payment confirmed for John Doe at ${schoolName}. Amount: GHS 1500 for School Fees. Fee fully paid (GHS 1500). Thank you!`,
       announcement: `${schoolName} - Important Notice: School will be closed tomorrow due to maintenance. Classes will resume on Monday.`,
       event: `${schoolName} Event: Sports Day scheduled for Friday, 2nd August 2025. Don't miss it!`,
       attendance: `${schoolName}: John Doe was absent on 30/07/2025. Please contact the school if this is unexpected.`
@@ -101,13 +103,25 @@ const SMSTestComponent = ({ schoolName }: Props) => {
               onClick={() => loadSampleMessage('welcome')}
               className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded hover:bg-green-200"
             >
-              Welcome
+              Student Welcome
+            </button>
+            <button
+              onClick={() => loadSampleMessage('parent_welcome')}
+              className="px-3 py-1 bg-green-100 text-green-800 text-sm rounded hover:bg-green-200"
+            >
+              Parent Welcome
             </button>
             <button
               onClick={() => loadSampleMessage('payment')}
               className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded hover:bg-blue-200"
             >
-              Payment
+              Payment (Partial)
+            </button>
+            <button
+              onClick={() => loadSampleMessage('payment_full')}
+              className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded hover:bg-blue-200"
+            >
+              Payment (Full)
             </button>
             <button
               onClick={() => loadSampleMessage('announcement')}
@@ -144,6 +158,7 @@ const SMSTestComponent = ({ schoolName }: Props) => {
         <div className="text-sm text-yellow-700 space-y-1">
           <p>• Make sure your Hubtel credentials are configured in environment variables</p>
           <p>• Use international format for phone numbers (e.g., 233241234567)</p>
+          <p>• SMS will be sent from: <strong>{schoolName}</strong> (formatted for SMS sender ID)</p>
           <p>• Check SMS logs in the main SMS Management page for delivery status</p>
         </div>
       </div>

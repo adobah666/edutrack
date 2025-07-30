@@ -17,8 +17,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Phone number and content are required' }, { status: 400 });
     }
 
+    // Get the user's school name to use as sender name
+    let senderName = from;
+    if (!senderName) {
+      try {
+        // Try to get school name from admin user
+        const admin = await prisma.admin.findUnique({
+          where: { id: userId },
+          include: { school: { select: { name: true } } }
+        });
+        
+        if (admin?.school?.name) {
+          // Use formatted school name as sender ID
+          senderName = SMSService.formatSenderName(admin.school.name);
+        } else {
+          // Fallback to default
+          senderName = 'School';
+        }
+      } catch (error) {
+        console.error('Error getting school name:', error);
+        senderName = 'SchoolApp';
+      }
+    }
+
     // Send SMS
-    const result = await SMSService.sendSMS(to, content, from);
+    const result = await SMSService.sendSMS(to, content, senderName);
 
     // Log SMS in database for tracking
     if (result.success) {

@@ -159,11 +159,18 @@ export async function POST(req: Request) {
     try {
       const { SMSService } = await import('@/lib/sms-service');
       const studentName = `${studentFee.student.name} ${studentFee.student.surname}`;
-      const paymentMessage = SMSService.getPaymentConfirmationMessage(
+      
+      // Calculate remaining balance after this payment
+      const newTotalPaid = totalPaid + paidAmount;
+      const remainingBalance = classFee.amount - newTotalPaid;
+      
+      const paymentMessage = SMSService.getPaymentConfirmationWithBalanceMessage(
         studentName,
         paidAmount,
         classFee.feeType.name,
-        studentFee.student.school.name
+        studentFee.student.school.name,
+        remainingBalance,
+        classFee.amount
       );
 
       // Get all phone numbers for the student (student + parents)

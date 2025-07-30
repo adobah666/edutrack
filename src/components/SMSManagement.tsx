@@ -54,6 +54,7 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
   const [message, setMessage] = useState('');
   const [messageType, setMessageType] = useState<'ANNOUNCEMENT' | 'EVENT_NOTIFICATION' | 'MANUAL'>('ANNOUNCEMENT');
   const [sending, setSending] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const getAllRecipients = () => {
     switch (recipientType) {
@@ -65,13 +66,54 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
     }
   };
 
+  const getFilteredRecipients = () => {
+    const allRecipients = getAllRecipients();
+    
+    if (!searchTerm.trim()) {
+      return allRecipients;
+    }
+
+    const searchLower = searchTerm.toLowerCase();
+    
+    return allRecipients.filter(recipient => {
+      // Search by recipient's own name (first name + surname if available)
+      const recipientName = recipient.name || '';
+      const recipientSurname = (recipient as any).surname || '';
+      const fullName = `${recipientName} ${recipientSurname}`.toLowerCase();
+      const nameMatch = fullName.includes(searchLower);
+      
+      // For parents, also search by their children's names
+      if ('parentStudents' in recipient && recipient.parentStudents) {
+        const childrenMatch = recipient.parentStudents.some(ps => {
+          if (ps && ps.student && ps.student.name) {
+            const studentFullName = `${ps.student.name}`.toLowerCase();
+            return studentFullName.includes(searchLower);
+          }
+          return false;
+        });
+        return nameMatch || childrenMatch;
+      }
+      
+      // For students and teachers, search by their name
+      return nameMatch;
+    });
+  };
+
   const handleSelectAll = () => {
-    const allIds = getAllRecipients().map(r => r.id);
-    setSelectedRecipients(allIds);
+    const filteredIds = getFilteredRecipients().map(r => r.id);
+    setSelectedRecipients(prev => {
+      const newSelected = new Set([...prev, ...filteredIds]);
+      return Array.from(newSelected);
+    });
   };
 
   const handleDeselectAll = () => {
-    setSelectedRecipients([]);
+    const filteredIds = getFilteredRecipients().map(r => r.id);
+    setSelectedRecipients(prev => prev.filter(id => !filteredIds.includes(id)));
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
   };
 
   const handleRecipientToggle = (id: string) => {
@@ -286,6 +328,7 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
                 onChange={(e) => {
                   setRecipientType(e.target.value as any);
                   setSelectedRecipients([]);
+                  setSearchTerm(''); // Clear search when changing recipient type
                 }}
                 className="w-full p-2 border rounded-md"
               >
@@ -296,18 +339,53 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
               </select>
             </div>
 
+            {/* Search Input */}
+            <div>
+              <label className="block text-sm font-medium mb-2">Search Recipients</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={
+                    recipientType === 'parents' 
+                      ? 'Search by parent or student name...' 
+                      : recipientType === 'students'
+                      ? 'Search by student name...'
+                      : recipientType === 'teachers'
+                      ? 'Search by teacher name...'
+                      : 'Search by name...'
+                  }
+                  className="w-full p-2 pr-8 border rounded-md text-sm"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={handleClearSearch}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {searchTerm && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Showing {getFilteredRecipients().length} of {getAllRecipients().length} recipients
+                </div>
+              )}
+            </div>
+
             <div className="flex space-x-2">
               <button
                 onClick={handleSelectAll}
                 className="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
               >
-                Select All
+                Select All {searchTerm ? 'Filtered' : ''}
               </button>
               <button
                 onClick={handleDeselectAll}
                 className="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
               >
-                Deselect All
+                Deselect All {searchTerm ? 'Filtered' : ''}
               </button>
             </div>
 
@@ -316,7 +394,12 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
             </div>
 
             <div className="border rounded-md max-h-96 overflow-y-auto">
-              {getAllRecipients().map((recipient) => (
+              {getFilteredRecipients().length === 0 ? (
+                <div className="p-4 text-center text-gray-500">
+                  {searchTerm ? 'No recipients found matching your search.' : 'No recipients available.'}
+                </div>
+              ) : (
+                getFilteredRecipients().map((recipient) => (
                 <div
                   key={recipient.id}
                   className="flex items-center p-3 border-b last:border-b-0 hover:bg-gray-50"
@@ -348,7 +431,8 @@ const SMSManagement = ({ students, parents, teachers, smsLogs, schoolName }: Pro
                     </div>
                   </div>
                 </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </div>

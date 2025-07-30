@@ -282,12 +282,35 @@ export const createParent = async (
     if (data.phone) {
       try {
         const { SMSService } = await import('@/lib/sms-service');
-        const welcomeMessage = SMSService.getWelcomeMessage(
-          'parent',
+        
+        // Get the names of students linked to this parent
+        let studentNames: string[] = [];
+        
+        // Get student names from parentStudents assignments (new approach)
+        if (data.parentStudents && data.parentStudents.length > 0) {
+          const studentIds = data.parentStudents.map(ps => ps.studentId);
+          const students = await prisma.student.findMany({
+            where: { id: { in: studentIds } },
+            select: { name: true, surname: true }
+          });
+          studentNames = students.map(s => `${s.name} ${s.surname}`);
+        }
+        
+        // Get student names from studentIds (backward compatibility)
+        if (data.studentIds && data.studentIds.length > 0 && studentNames.length === 0) {
+          const students = await prisma.student.findMany({
+            where: { id: { in: data.studentIds } },
+            select: { name: true, surname: true }
+          });
+          studentNames = students.map(s => `${s.name} ${s.surname}`);
+        }
+        
+        const welcomeMessage = SMSService.getParentWelcomeMessage(
           data.name,
           data.username,
           data.password,
-          newParent.school.name
+          newParent.school.name,
+          studentNames
         );
         
         await SMSService.sendSMS(data.phone, welcomeMessage);

@@ -39,7 +39,7 @@ export const env = {
   // SMS
   HUBTEL_CLIENT_ID: process.env.HUBTEL_CLIENT_ID!,
   HUBTEL_CLIENT_SECRET: process.env.HUBTEL_CLIENT_SECRET!,
-  HUBTEL_SMS_FROM: process.env.HUBTEL_SMS_FROM || 'SchoolApp',
+  HUBTEL_SMS_FROM: process.env.HUBTEL_SMS_FROM || 'School',
 };
 
 // Validate required environment variables

@@ -116,6 +116,61 @@ export async function POST(req: Request) {
       studentFee.classFee.feeType.name
     );
 
+    // Send payment confirmation SMS to student and parents
+    try {
+      // Get student with parent information and school details for SMS
+      const studentWithDetails = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: {
+          name: true,
+          surname: true,
+          phone: true,
+          school: {
+            select: {
+              name: true
+            }
+          },
+          parentStudents: {
+            select: {
+              parent: {
+                select: {
+                  phone: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (studentWithDetails) {
+        const { SMSService } = await import('@/lib/sms-service');
+        const studentName = `${studentWithDetails.name} ${studentWithDetails.surname}`;
+        
+        // Calculate remaining balance after this payment
+        const remainingBalance = classFee.amount - totalPaidAmount;
+        
+        const paymentMessage = SMSService.getPaymentConfirmationWithBalanceMessage(
+          studentName,
+          amount,
+          studentFee.classFee.feeType.name,
+          studentWithDetails.school.name,
+          remainingBalance,
+          classFee.amount
+        );
+
+        // Get all phone numbers for the student (student + parents)
+        const phoneNumbers = SMSService.getStudentPhoneNumbers(studentWithDetails);
+        
+        // Send SMS to all available phone numbers
+        for (const phone of phoneNumbers) {
+          await SMSService.sendSMS(phone, paymentMessage);
+        }
+      }
+    } catch (smsError) {
+      console.error('Failed to send payment confirmation SMS:', smsError);
+      // Don't fail the payment creation if SMS fails
+    }
+
     return NextResponse.json({
       ...studentFee,
       totalPaidAmount,
